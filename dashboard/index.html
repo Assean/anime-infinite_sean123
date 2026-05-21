@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>會員中心 — Anime Infinite</title>
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    /* Radar/ring chart for verification */
+    .radar-wrap {
+      display: flex;
+      justify-content: center;
+      margin: 16px 0;
+    }
+
+    /* Asset cards */
+    .asset-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: all var(--transition);
+    }
+
+    .asset-card:hover { border-color: var(--border-glow); transform: translateY(-2px); }
+
+    .asset-icon {
+      width: 48px; height: 48px;
+      border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .asset-value {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .asset-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-family: var(--font-ui);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    /* History table */
+    .history-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      font-family: var(--font-ui);
+      letter-spacing: 0.06em;
+    }
+
+    .history-tag.topup   { background:rgba(0,255,136,0.1); color:var(--accent-green); }
+    .history-tag.redeem  { background:rgba(0,210,255,0.1); color:var(--accent-cyan); }
+    .history-tag.reward  { background:rgba(255,209,102,0.1); color:var(--accent-gold); }
+    .history-tag.refund  { background:rgba(255,45,85,0.1); color:var(--accent-crimson); }
+
+    /* Task cards */
+    .task-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: all var(--transition);
+    }
+
+    .task-card.completed { opacity: 0.6; }
+    .task-card:hover { border-color: var(--border-glow); }
+
+    .task-check {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--border-glow);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: all var(--transition);
+      cursor: pointer;
+    }
+
+    .task-check.done {
+      background: var(--accent-green);
+      border-color: var(--accent-green);
+      color: var(--bg-void);
+      box-shadow: 0 0 12px rgba(0,255,136,0.4);
+    }
+
+    .task-reward {
+      margin-left: auto;
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--accent-gold);
+      white-space: nowrap;
+    }
+
+    /* Roblox data */
+    .roblox-stat {
+      background: var(--bg-deep);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      text-align: center;
+    }
+
+    .roblox-stat-val {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .roblox-stat-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-family: var(--font-ui);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* Binding row */
+    .bind-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border-dim);
+      gap: 12px;
+    }
+    .bind-row:last-child { border-bottom: none; }
+
+    .bind-platform {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .bind-icon {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.05rem;
+      flex-shrink: 0;
+    }
+
+    .bind-status-done  { color: var(--accent-green); font-size: 0.82rem; }
+    .bind-status-pend  { color: var(--accent-gold);  font-size: 0.82rem; }
+    .bind-status-none  { color: var(--text-muted);   font-size: 0.82rem; }
+
+    /* Edit profile */
+    .avatar-edit-wrap {
+      position: relative;
+      width: 72px; height: 72px;
+      margin: 0 auto 12px;
+    }
+
+    .avatar-edit-btn {
+      position: absolute;
+      bottom: 0; right: 0;
+      width: 24px; height: 24px;
+      background: var(--accent-cyan);
+      border: 2px solid var(--bg-deep);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      font-size: 0.65rem;
+      color: var(--bg-void);
+    }
+
+    /* Progress overall */
+    .overall-progress {
+      background: var(--bg-deep);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      margin-top: 12px;
+    }
+
+    .progress-bar-wrap {
+      height: 6px;
+      background: var(--bg-elevated);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
+      transition: width 1s ease;
+    }
+
+    /* Birthday gift box */
+    .birthday-card {
+      background: linear-gradient(135deg, rgba(255,209,102,0.08), rgba(255,45,85,0.06));
+      border: 1px solid rgba(255,209,102,0.3);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-sidebar { width: 100%; position: static; }
+      .dashboard-wrap { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ══ Navbar ════════════════════════════════════════════════ -->
+<nav id="navbar">
+  <div class="container">
+    <div class="navbar-inner">
+      <a href="../index.html" class="navbar-logo">
+        <div class="logo-icon">⚔️</div>
+        <div class="logo-text">ANIME <span>∞</span></div>
+      </a>
+      <div class="navbar-nav">
+        <a href="../index.html"  class="nav-link">首頁</a>
+        <a href="../news.html"   class="nav-link">最新資訊</a>
+        <a href="../store.html"  class="nav-link">儲值商城</a>
+        <a href="index.html"     class="nav-link active">會員中心</a>
+      </div>
+      <div class="navbar-actions">
+        <div style="position:relative">
+          <button class="btn-notif" onclick="toggleNotif()">
+            <i class="fa-solid fa-bell"></i>
+            <span class="notif-badge" id="notifCount">2</span>
+          </button>
+          <div class="notif-dropdown" id="notifDropdown">
+            <div class="notif-header"><span>通知中心</span></div>
+            <div class="notif-item unread" onclick="openModal('notifModal')">
+              <div class="notif-icon">🎉</div>
+              <div class="notif-body">
+                <div class="notif-title">晉升通知</div>
+                <div class="notif-preview">恭喜您已被提名晉升為攻略達人...</div>
+              </div>
+              <div class="notif-time">2分鐘前</div>
+            </div>
+            <div class="notif-item unread">
+              <div class="notif-icon">💎</div>
+              <div class="notif-body">
+                <div class="notif-title">生日禮包已發送</div>
+                <div class="notif-preview">您的星辰禮盒已送達帳戶...</div>
+              </div>
+              <div class="notif-time">1小時前</div>
+            </div>
+            <button class="notif-read-btn">查看全部</button>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="logout()">
+          <i class="fa-solid fa-right-from-bracket"></i> 登出
+        </button>
+        <button class="navbar-toggle" onclick="toggleMobileNav()"><i class="fa-solid fa-bars"></i></button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ══ Dashboard Layout ══════════════════════════════════════ -->
+<div class="dashboard-wrap">
+
+  <!-- ── Sidebar ─────────────────────────────────────── -->
+  <aside class="dashboard-sidebar" id="dashboardSidebar">
+
+    <!-- User profile block -->
+    <div class="sidebar-user">
+      <div class="avatar-edit-wrap">
+        <div class="sidebar-avatar" id="sidebarAvatar">🧙</div>
+        <div class="avatar-edit-btn" onclick="openModal('editProfileModal')" title="更改頭像">
+          <i class="fa-solid fa-pen"></i>
+        </div>
+      </div>
+      <div class="sidebar-username" id="sidebarName">載入中...</div>
+      <div class="sidebar-role" id="sidebarRole">
+        <span class="badge badge-cyan">一般使用者</span>
+      </div>
+      <div style="margin-top:10px;font-size:0.8rem;color:var(--text-muted)">
+        UID: <span id="sidebarUID" style="font-family:monospace">—</span>
+      </div>
+    </div>
+
+    <!-- Verification rings -->
+    <div class="verify-rings">
+      <div class="verify-rings-title">驗證進度</div>
+      <div class="verify-grid" id="verifyGrid">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Overall progress bar -->
+      <div class="overall-progress">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:0.78rem;color:var(--text-secondary);font-family:var(--font-ui);font-weight:600">整體完成度</span>
+          <span style="font-size:0.82rem;font-family:var(--font-display);font-weight:800;color:var(--accent-cyan)" id="verifyPct">0%</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="verifyProgressBar" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nav items -->
+    <nav class="sidebar-nav">
+      <div style="font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);padding:8px 14px 4px">功能選單</div>
+      <a class="sidebar-nav-item active" data-tab="overview" onclick="switchTab('overview',this)">
+        <i class="fa-solid fa-chart-pie"></i> 資產總覽
+      </a>
+      <a class="sidebar-nav-item" data-tab="history" onclick="switchTab('history',this)">
+        <i class="fa-solid fa-clock-rotate-left"></i> 歷史紀錄
+      </a>
+      <a class="sidebar-nav-item" data-tab="tasks" onclick="switchTab('tasks',this)">
+        <i class="fa-solid fa-list-check"></i> 任務與福利
+      </a>
+      <a class="sidebar-nav-item" data-tab="bindings" onclick="switchTab('bindings',this)">
+        <i class="fa-solid fa-link"></i> 帳號綁定
+      </a>
+      <a class="sidebar-nav-item" data-tab="security" onclick="switchTab('security',this)">
+        <i class="fa-solid fa-shield-halved"></i> 安全設定
+      </a>
+
+      <div style="font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);padding:16px 14px 4px">快捷</div>
+      <a href="../store.html" class="sidebar-nav-item">
+        <i class="fa-solid fa-store"></i> 前往儲值
+      </a>
+      <a href="../news.html" class="sidebar-nav-item">
+        <i class="fa-solid fa-newspaper"></i> 最新資訊
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ── Main Content ────────────────────────────────── -->
+  <main class="dashboard-main">
+
+    <!-- Page header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px">
+      <div>
+        <h1 style="font-family:var(--font-display);font-size:1.5rem;font-weight:800">
+          <span class="text-muted" style="font-weight:400">// </span>
+          <span id="pageTitle">資產總覽</span>
+        </h1>
+        <div style="font-size:0.82rem;color:var(--text-muted);margin-top:4px" id="pageSubtitle">查看您的點數與遊戲內資產</div>
+      </div>
+      <div class="d-flex gap-8 align-center">
+        <div style="font-size:0.78rem;color:var(--text-muted)">最後更新：<span id="lastSync">—</span></div>
+        <button class="btn btn-ghost btn-sm" onclick="refreshData()">
+          <i class="fa-solid fa-rotate" id="refreshIcon"></i> 同步
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══ TAB: OVERVIEW ═══════════════════════════════ -->
+    <div id="tab-overview">
+
+      <!-- Assets row -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:28px" id="assetGrid">
+        <!-- Skeleton -->
+        <div class="asset-card"><div style="width:100%"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-text"></div></div></div>
+        <div class="asset-card"><div style="width:100%"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-text"></div></div></div>
+        <div class="asset-card"><div style="width:100%"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-text"></div></div></div>
+      </div>
+
+      <!-- Roblox game data -->
+      <div class="card-panel" style="padding:24px;margin-bottom:24px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div>
+            <div style="font-family:var(--font-ui);font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Roblox 遊戲數據</div>
+            <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:700">遊戲內即時資產</div>
+          </div>
+          <span class="badge badge-green"><i class="fa-solid fa-circle" style="font-size:0.5rem"></i> 已連接</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px" id="robloxData">
+          <div class="roblox-stat"><div class="skeleton" style="height:32px;margin-bottom:8px"></div><div class="skeleton skeleton-text"></div></div>
+          <div class="roblox-stat"><div class="skeleton" style="height:32px;margin-bottom:8px"></div><div class="skeleton skeleton-text"></div></div>
+          <div class="roblox-stat"><div class="skeleton" style="height:32px;margin-bottom:8px"></div><div class="skeleton skeleton-text"></div></div>
+          <div class="roblox-stat"><div class="skeleton" style="height:32px;margin-bottom:8px"></div><div class="skeleton skeleton-text"></div></div>
+          <div class="roblox-stat"><div class="skeleton" style="height:32px;margin-bottom:8px"></div><div class="skeleton skeleton-text"></div></div>
+        </div>
+      </div>
+
+      <!-- Quick actions -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">
+        <a href="../store.html" class="card" style="padding:20px;text-align:center;cursor:pointer;text-decoration:none">
+          <div style="font-size:1.8rem;margin-bottom:10px">💰</div>
+          <div style="font-family:var(--font-ui);font-size:0.88rem;font-weight:700">前往儲值</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px">購買點數與商品</div>
+        </a>
+        <div class="card" style="padding:20px;text-align:center;cursor:pointer" onclick="openModal('redeemModal')">
+          <div style="font-size:1.8rem;margin-bottom:10px">🎁</div>
+          <div style="font-family:var(--font-ui);font-size:0.88rem;font-weight:700">兌換碼</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px">輸入福利碼</div>
+        </div>
+        <div class="card" style="padding:20px;text-align:center;cursor:pointer" onclick="switchTab('tasks',null)">
+          <div style="font-size:1.8rem;margin-bottom:10px">📋</div>
+          <div style="font-family:var(--font-ui);font-size:0.88rem;font-weight:700">每日任務</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px">完成任務領獎勵</div>
+        </div>
+        <div class="card" style="padding:20px;text-align:center;cursor:pointer" onclick="switchTab('bindings',null)">
+          <div style="font-size:1.8rem;margin-bottom:10px">🔗</div>
+          <div style="font-family:var(--font-ui);font-size:0.88rem;font-weight:700">帳號綁定</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px">完善驗證進度</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ TAB: HISTORY ═══════════════════════════════ -->
+    <div id="tab-history" style="display:none">
+      <div class="card-panel" style="padding:0;overflow:hidden">
+        <div style="padding:20px 24px;border-bottom:1px solid var(--border-dim);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div style="font-family:var(--font-ui);font-size:0.82rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">所有交易紀錄</div>
+          <div class="d-flex gap-8">
+            <select class="form-control" style="padding:7px 12px;font-size:0.82rem;width:auto" id="historyFilter" onchange="filterHistory()">
+              <option value="all">全部類型</option>
+              <option value="topup">儲值</option>
+              <option value="redeem">兌換碼</option>
+              <option value="reward">系統獎勵</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="overflow-x:auto">
+          <table class="data-table" id="historyTable">
+            <thead>
+              <tr>
+                <th>時間</th>
+                <th>類型</th>
+                <th>說明</th>
+                <th style="text-align:right">點數變動</th>
+                <th>狀態</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ TAB: TASKS ══════════════════════════════════ -->
+    <div id="tab-tasks" style="display:none">
+
+      <!-- Birthday gift -->
+      <div class="birthday-card" id="birthdayCard" style="display:none">
+        <div style="font-size:2.5rem;margin-bottom:8px">🎂</div>
+        <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:800;color:var(--accent-gold);margin-bottom:4px">生日快樂！</div>
+        <div style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:16px">您的生日禮包「星辰禮盒」已準備好了！</div>
+        <button class="btn btn-gold" onclick="claimBirthday()"><i class="fa-solid fa-gift"></i> 立即領取</button>
+      </div>
+
+      <!-- Daily tasks -->
+      <div class="card-panel" style="padding:24px;margin-bottom:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div style="font-family:var(--font-display);font-size:1rem;font-weight:700">每日任務</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);margin-top:2px">每日 00:00 重置</div>
+          </div>
+          <div style="font-size:0.82rem;color:var(--text-muted)">重置倒計時：<span id="taskCountdown" style="font-family:monospace;color:var(--accent-cyan)">00:00:00</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px" id="dailyTasks">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Weekly tasks -->
+      <div class="card-panel" style="padding:24px">
+        <div style="font-family:var(--font-display);font-size:1rem;font-weight:700;margin-bottom:16px">週常任務</div>
+        <div style="display:flex;flex-direction:column;gap:10px" id="weeklyTasks">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ TAB: BINDINGS ══════════════════════════════ -->
+    <div id="tab-bindings" style="display:none">
+      <div class="card-panel" style="padding:24px">
+        <div style="font-family:var(--font-ui);font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:20px">帳號綁定管理</div>
+
+        <div id="bindingsList">
+          <!-- Email -->
+          <div class="bind-row">
+            <div class="bind-platform">
+              <div class="bind-icon" style="background:rgba(0,210,255,0.1);color:var(--accent-cyan)"><i class="fa-solid fa-envelope"></i></div>
+              <div>
+                <div style="font-family:var(--font-ui);font-weight:700;font-size:0.9rem">電子郵件</div>
+                <div style="font-size:0.78rem;color:var(--text-muted)" id="bindEmail">—</div>
+              </div>
+            </div>
+            <div id="bindEmailStatus" class="bind-status-pend">待驗證</div>
+          </div>
+
+          <!-- Discord -->
+          <div class="bind-row">
+            <div class="bind-platform">
+              <div class="bind-icon" style="background:rgba(88,101,242,0.1);color:#7289da"><i class="fa-brands fa-discord"></i></div>
+              <div>
+                <div style="font-family:var(--font-ui);font-weight:700;font-size:0.9rem">Discord</div>
+                <div style="font-size:0.78rem;color:var(--text-muted)" id="bindDiscord">尚未綁定</div>
+              </div>
+            </div>
+            <button class="btn btn-outline btn-sm" id="bindDiscordBtn" onclick="bindPlatform('discord')">
+              <i class="fa-brands fa-discord"></i> 綁定
+            </button>
+          </div>
+
+          <!-- Google -->
+          <div class="bind-row">
+            <div class="bind-platform">
+              <div class="bind-icon" style="background:rgba(234,67,53,0.08);color:#ea4335"><i class="fa-brands fa-google"></i></div>
+              <div>
+                <div style="font-family:var(--font-ui);font-weight:700;font-size:0.9rem">Google</div>
+                <div style="font-size:0.78rem;color:var(--text-muted)" id="bindGoogle">尚未綁定</div>
+              </div>
+            </div>
+            <button class="btn btn-outline btn-sm" id="bindGoogleBtn" onclick="bindPlatform('google')">
+              <i class="fa-brands fa-google"></i> 綁定
+            </button>
+          </div>
+
+          <!-- Roblox -->
+          <div class="bind-row">
+            <div class="bind-platform">
+              <div class="bind-icon" style="background:rgba(255,255,255,0.06);color:var(--text-primary)"><i class="fa-solid fa-gamepad"></i></div>
+              <div>
+                <div style="font-family:var(--font-ui);font-weight:700;font-size:0.9rem">Roblox</div>
+                <div style="font-size:0.78rem;color:var(--text-muted)" id="bindRoblox">尚未綁定</div>
+              </div>
+            </div>
+            <button class="btn btn-outline btn-sm" id="bindRobloxBtn" onclick="openModal('robloxBindModal')">
+              <i class="fa-solid fa-gamepad"></i> 綁定
+            </button>
+          </div>
+
+          <!-- Phone -->
+          <div class="bind-row">
+            <div class="bind-platform">
+              <div class="bind-icon" style="background:rgba(0,255,136,0.08);color:var(--accent-green)"><i class="fa-solid fa-mobile-screen-button"></i></div>
+              <div>
+                <div style="font-family:var(--font-ui);font-weight:700;font-size:0.9rem">手機號碼</div>
+                <div style="font-size:0.78rem;color:var(--text-muted)" id="bindPhone">尚未綁定</div>
+              </div>
+            </div>
+            <button class="btn btn-outline btn-sm" id="bindPhoneBtn" onclick="openModal('phoneBindModal')">
+              <i class="fa-solid fa-phone"></i> 綁定
+            </button>
+          </div>
+        </div>
+
+        <!-- Purchase restriction notice -->
+        <div id="bindNotice" class="maint-banner" style="margin-top:20px">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          請完成 Roblox 綁定以解鎖商城與兌換功能
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ TAB: SECURITY ══════════════════════════════ -->
+    <div id="tab-security" style="display:none">
+      <div class="card-panel" style="padding:24px;max-width:520px">
+        <div style="font-family:var(--font-display);font-size:1rem;font-weight:700;margin-bottom:20px">密碼修改</div>
+
+        <div class="form-group">
+          <label class="form-label">目前密碼</label>
+          <div class="input-group">
+            <i class="fa-solid fa-lock input-icon"></i>
+            <input type="password" class="form-control" id="currentPwd" placeholder="輸入目前密碼">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">新密碼</label>
+          <div class="input-group">
+            <i class="fa-solid fa-lock input-icon"></i>
+            <input type="password" class="form-control" id="newPwd" placeholder="至少 8 碼">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">確認新密碼</label>
+          <div class="input-group">
+            <i class="fa-solid fa-lock input-icon"></i>
+            <input type="password" class="form-control" id="confirmNewPwd" placeholder="再次輸入">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="changePwd()">
+          <i class="fa-solid fa-key"></i> 更新密碼
+        </button>
+
+        <div class="divider"></div>
+
+        <div style="font-family:var(--font-display);font-size:1rem;font-weight:700;margin-bottom:16px">登入紀錄</div>
+        <div id="loginLogs">
+          <div class="skeleton skeleton-box" style="margin-bottom:8px"></div>
+          <div class="skeleton skeleton-box"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══ MODALS ════════════════════════════════════════════════ -->
+
+<!-- Redeem Modal -->
+<div class="modal-overlay" id="redeemModal" onclick="closeOnOverlay(event,'redeemModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🎁 兌換碼</div>
+      <button class="modal-close" onclick="closeModal('redeemModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">輸入 10 碼兌換碼</label>
+        <input type="text" class="form-control" id="dashRedeemInput" maxlength="10"
+          style="font-family:monospace;font-size:1.2rem;letter-spacing:0.2em;text-align:center;text-transform:uppercase"
+          placeholder="XXXXXXXXXX" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+      </div>
+      <button class="btn btn-primary w-full" onclick="doRedeemDash()">
+        <i class="fa-solid fa-gift"></i> 立即兌換
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Roblox Bind Modal -->
+<div class="modal-overlay" id="robloxBindModal" onclick="closeOnOverlay(event,'robloxBindModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fa-solid fa-gamepad" style="color:var(--accent-cyan);margin-right:8px"></i>綁定 Roblox 帳號</div>
+      <button class="modal-close" onclick="closeModal('robloxBindModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:rgba(0,210,255,0.06);border:1px solid rgba(0,210,255,0.2);border-radius:var(--radius-sm);padding:14px;margin-bottom:20px;font-size:0.85rem;color:var(--text-secondary);line-height:1.7">
+        <strong style="color:var(--accent-cyan)">如何綁定？</strong><br>
+        1. 在 Roblox 遊戲內輸入指令 <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;font-family:monospace">/bind</code><br>
+        2. 系統將生成一組一次性驗證碼<br>
+        3. 將驗證碼貼入下方欄位完成綁定
+      </div>
+      <div class="form-group">
+        <label class="form-label">Roblox 使用者名稱</label>
+        <div class="input-group">
+          <i class="fa-solid fa-user input-icon"></i>
+          <input type="text" class="form-control" id="robloxUsername" placeholder="您的 Roblox 使用者名稱">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">遊戲內驗證碼</label>
+        <div class="input-group">
+          <i class="fa-solid fa-key input-icon"></i>
+          <input type="text" class="form-control" id="robloxCode" placeholder="6 位數驗證碼" maxlength="6"
+            style="font-family:monospace;letter-spacing:0.2em;text-align:center">
+        </div>
+      </div>
+      <button class="btn btn-primary w-full" onclick="bindRoblox()">
+        <i class="fa-solid fa-link"></i> 確認綁定
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Phone Bind Modal -->
+<div class="modal-overlay" id="phoneBindModal" onclick="closeOnOverlay(event,'phoneBindModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fa-solid fa-phone" style="color:var(--accent-green);margin-right:8px"></i>綁定手機號碼</div>
+      <button class="modal-close" onclick="closeModal('phoneBindModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">手機號碼</label>
+        <div class="input-group">
+          <i class="fa-solid fa-phone input-icon"></i>
+          <input type="tel" class="form-control" id="phoneInput" placeholder="+886 9XX XXX XXX">
+        </div>
+      </div>
+      <div id="phoneOTPSection" style="display:none">
+        <div class="form-group">
+          <label class="form-label">簡訊驗證碼</label>
+          <input type="text" class="form-control" id="phoneOTP" maxlength="6"
+            style="font-family:monospace;letter-spacing:0.3em;text-align:center;font-size:1.3rem" placeholder="000000">
+        </div>
+      </div>
+      <div id="sendOTPBtn">
+        <button class="btn btn-primary w-full" onclick="sendPhoneOTP()">
+          <i class="fa-solid fa-paper-plane"></i> 發送驗證碼
+        </button>
+      </div>
+      <div id="verifyOTPBtn" style="display:none">
+        <button class="btn btn-primary w-full" onclick="verifyPhoneOTP()">
+          <i class="fa-solid fa-check"></i> 確認驗證
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Notification Modal -->
+<div class="modal-overlay" id="notifModal" onclick="closeOnOverlay(event,'notifModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🎉 晉升通知</div>
+      <button class="modal-close" onclick="closeModal('notifModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:14px">2024-01-15 09:32:11</div>
+      <div style="color:var(--text-secondary);line-height:1.9;font-size:0.93rem">
+        恭喜您！您已被提名晉升為<strong style="color:var(--accent-cyan)">【攻略達人】</strong>。<br><br>
+        請詳細閱讀以下權責明細：<br>
+        • 您將獲得在平台發表攻略文章的權限<br>
+        • 您的文章將顯示「攻略達人」專屬標籤<br>
+        • 享有優先測試新功能的資格<br><br>
+        請於 <strong style="color:var(--accent-gold)">7 天內</strong>於下方框格回覆以確認領取資格。
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div style="font-family:var(--font-ui);font-size:0.78rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px">回覆管理員</div>
+      <div class="input-group">
+        <input type="text" class="form-control" id="notifReplyDash" placeholder="輸入您的回覆確認...">
+        <button class="input-action" onclick="sendReply()"><i class="fa-solid fa-paper-plane" style="color:var(--accent-cyan)"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/main.js"></script>
+<script>
+// ── Auth Guard ────────────────────────────────────────
+if (!AI.isLoggedIn()) window.location.href = '../auth.html';
+const user = AI.getUser();
+
+// ── Init user data ────────────────────────────────────
+function initUserUI() {
+  if (!user) return;
+  document.getElementById('sidebarName').textContent = user.nickname || '玩家';
+  document.getElementById('sidebarUID').textContent  = user.id || '—';
+
+  const roleMap = {
+    1: ['一般使用者','badge-dim'],
+    2: ['VIP 使用者','badge-gold'],
+    3: ['YouTuber','badge-crimson'],
+    4: ['技術貢獻者','badge-cyan'],
+    5: ['攻略達人','badge-cyan'],
+    6: ['社群領袖','badge-purple'],
+    7: ['先鋒測試員','badge-green'],
+    8: ['小幫手','badge-purple'],
+    9: ['客服技術','badge-purple'],
+    10:['基本管理員','badge-crimson'],
+    11:['進階管理員','badge-crimson'],
+    12:['總管理員','badge-gold'],
+  };
+  const [roleName, roleClass] = roleMap[user.role_level || 1] || roleMap[1];
+  document.getElementById('sidebarRole').innerHTML = `<span class="badge ${roleClass}">${roleName}</span>`;
+
+  // Build verification rings
+  buildVerifyRings();
+
+  // Load data
+  loadAssets();
+}
+
+// ── Verification rings ────────────────────────────────
+const verifyItems = [
+  { key:'email',   label:'Email',   icon:'📧', color:'var(--accent-cyan)' },
+  { key:'google',  label:'Google',  icon:'🔵', color:'#4285F4' },
+  { key:'discord', label:'Discord', icon:'💜', color:'#7289da' },
+  { key:'roblox',  label:'Roblox',  icon:'🎮', color:'var(--accent-green)' },
+  { key:'phone',   label:'手機',    icon:'📱', color:'var(--accent-gold)' },
+];
+
+function buildVerifyRings() {
+  const verifications = user.verifications || {};
+  const grid = document.getElementById('verifyGrid');
+  let done = 0;
+  grid.innerHTML = verifyItems.map(item => {
+    const isDone = verifications[item.key];
+    if (isDone) done++;
+    return buildProgressRing(isDone ? 100 : 0, item.color, item.icon, item.label);
+  }).join('');
+
+  const pct = Math.round((done / verifyItems.length) * 100);
+  setTimeout(() => {
+    document.getElementById('verifyPct').textContent = pct + '%';
+    document.getElementById('verifyProgressBar').style.width = pct + '%';
+  }, 300);
+}
+
+// ── Load assets (with skeleton) ───────────────────────
+function loadAssets() {
+  setTimeout(() => {
+    // Simulate API response
+    const assets = {
+      points:  2480,
+      rbx_gems: 1200,
+      battle_pass_days: 27,
+    };
+
+    document.getElementById('assetGrid').innerHTML = `
+      <div class="asset-card">
+        <div class="asset-icon" style="background:rgba(255,209,102,0.1)">💰</div>
+        <div>
+          <div class="asset-value text-gold">${assets.points.toLocaleString()}</div>
+          <div class="asset-label">Web 點數</div>
+        </div>
+      </div>
+      <div class="asset-card">
+        <div class="asset-icon" style="background:rgba(0,210,255,0.1)">💎</div>
+        <div>
+          <div class="asset-value text-cyan">${assets.rbx_gems.toLocaleString()}</div>
+          <div class="asset-label">遊戲內寶石</div>
+        </div>
+      </div>
+      <div class="asset-card">
+        <div class="asset-icon" style="background:rgba(0,255,136,0.1)">🎫</div>
+        <div>
+          <div class="asset-value text-green">${assets.battle_pass_days}</div>
+          <div class="asset-label">Battle Pass 剩餘天數</div>
+        </div>
+      </div>
+    `;
+
+    // Roblox data
+    document.getElementById('robloxData').innerHTML = `
+      <div class="roblox-stat"><div class="roblox-stat-val text-cyan">Lv.87</div><div class="roblox-stat-label">等級</div></div>
+      <div class="roblox-stat"><div class="roblox-stat-val text-gold">12,480</div><div class="roblox-stat-label">總勝場</div></div>
+      <div class="roblox-stat"><div class="roblox-stat-val text-crimson">3.2K</div><div class="roblox-stat-label">擊殺數</div></div>
+      <div class="roblox-stat"><div class="roblox-stat-val text-green">S3</div><div class="roblox-stat-label">賽季</div></div>
+      <div class="roblox-stat"><div class="roblox-stat-val text-purple">黑夜</div><div class="roblox-stat-label">稱號</div></div>
+    `;
+
+    document.getElementById('lastSync').textContent = '剛剛';
+  }, 800);
+}
+
+// ── Load history ──────────────────────────────────────
+const historyData = [
+  { time:'2024-01-15 14:22', type:'topup',  desc:'購買 500 P 點數包', delta:'+500' },
+  { time:'2024-01-15 09:11', type:'redeem', desc:'兌換碼 NEWYEAR2024', delta:'+200' },
+  { time:'2024-01-14 00:00', type:'reward', desc:'生日禮包獎勵',       delta:'+500' },
+  { time:'2024-01-13 22:05', type:'topup',  desc:'購買 1000 P 超值包', delta:'+1000' },
+  { time:'2024-01-12 15:30', type:'reward', desc:'每日登入獎勵',       delta:'+10' },
+  { time:'2024-01-10 11:22', type:'topup',  desc:'購買 200 P 入門包',  delta:'+200' },
+];
+
+function renderHistory(data) {
+  document.getElementById('historyBody').innerHTML = data.map(r => `
+    <tr>
+      <td class="td-mono">${r.time}</td>
+      <td><span class="history-tag ${r.type}">${{topup:'儲值',redeem:'兌換碼',reward:'獎勵',refund:'退款'}[r.type]}</span></td>
+      <td>${r.desc}</td>
+      <td style="text-align:right;font-family:var(--font-display);font-weight:700;color:${r.delta.startsWith('+') ? 'var(--accent-green)' : 'var(--accent-crimson)'}">${r.delta} P</td>
+      <td><span class="badge badge-green">成功</span></td>
+    </tr>
+  `).join('');
+}
+
+function filterHistory() {
+  const f = document.getElementById('historyFilter').value;
+  renderHistory(f === 'all' ? historyData : historyData.filter(r => r.type === f));
+}
+
+// ── Tasks ─────────────────────────────────────────────
+const tasks = {
+  daily: [
+    { id:1, label:'每日登入', reward:'+10 P', done:true },
+    { id:2, label:'完成 1 場戰鬥', reward:'+20 P', done:true },
+    { id:3, label:'瀏覽任意攻略文章', reward:'+5 P', done:false },
+    { id:4, label:'在社群按讚 3 次', reward:'+5 P', done:false },
+  ],
+  weekly: [
+    { id:5, label:'累計勝利 10 場', reward:'+100 P', done:false },
+    { id:6, label:'儲值任意金額', reward:'+50 P', done:false },
+    { id:7, label:'分享任意文章', reward:'+30 P', done:false },
+  ]
+};
+
+function renderTasks() {
+  const make = t => `
+    <div class="task-card ${t.done ? 'completed' : ''}">
+      <div class="task-check ${t.done ? 'done' : ''}" onclick="toggleTask(${t.id},this)">
+        ${t.done ? '<i class="fa-solid fa-check" style="font-size:0.75rem"></i>' : ''}
+      </div>
+      <div style="flex:1">
+        <div style="font-family:var(--font-ui);font-weight:600;font-size:0.9rem">${t.label}</div>
+      </div>
+      <div class="task-reward">${t.reward}</div>
+    </div>
+  `;
+  document.getElementById('dailyTasks').innerHTML  = tasks.daily.map(make).join('');
+  document.getElementById('weeklyTasks').innerHTML = tasks.weekly.map(make).join('');
+}
+
+function toggleTask(id, el) {
+  const task = [...tasks.daily, ...tasks.weekly].find(t => t.id === id);
+  if (!task || task.done) return;
+  task.done = true;
+  el.classList.add('done');
+  el.innerHTML = '<i class="fa-solid fa-check" style="font-size:0.75rem"></i>';
+  el.closest('.task-card').classList.add('completed');
+  showToast('success', '任務完成！', `獎勵 ${task.reward} 已發放`);
+}
+
+// ── Tab system ────────────────────────────────────────
+const tabs = ['overview','history','tasks','bindings','security'];
+const tabTitles = {
+  overview: ['資產總覽','查看您的點數與遊戲內資產'],
+  history:  ['歷史紀錄','所有儲值與兌換紀錄'],
+  tasks:    ['任務與福利','完成任務領取獎勵'],
+  bindings: ['帳號綁定','管理您的平台連結'],
+  security: ['安全設定','密碼與登入管理'],
+};
+
+function switchTab(name, el) {
+  tabs.forEach(t => {
+    document.getElementById(`tab-${t}`).style.display = t === name ? 'block' : 'none';
+  });
+  document.querySelectorAll('.sidebar-nav-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+  else document.querySelector(`[data-tab="${name}"]`)?.classList.add('active');
+
+  const [title, sub] = tabTitles[name] || ['',''];
+  document.getElementById('pageTitle').textContent    = title;
+  document.getElementById('pageSubtitle').textContent = sub;
+
+  // Lazy load
+  if (name === 'history') { renderHistory(historyData); }
+  if (name === 'tasks')   { renderTasks(); }
+  if (name === 'bindings') { loadBindings(); }
+  if (name === 'security') { loadLoginLogs(); }
+}
+
+// ── Bindings ──────────────────────────────────────────
+function loadBindings() {
+  const v = user.verifications || {};
+  const setStatus = (id, statusId, btnId, text, done) => {
+    document.getElementById(id).textContent = text;
+    const badge = `<span class="bind-status-${done?'done':'none'}">${done ? '<i class="fa-solid fa-check-circle"></i> 已綁定' : '尚未綁定'}</span>`;
+    if (statusId) document.getElementById(statusId).innerHTML = badge;
+    if (btnId && done) {
+      document.getElementById(btnId).innerHTML = '<i class="fa-solid fa-check"></i> 已綁定';
+      document.getElementById(btnId).disabled = true;
+      document.getElementById(btnId).className = 'btn btn-ghost btn-sm';
+    }
+  };
+  setStatus('bindEmail', 'bindEmailStatus', null, user.email || '—', v.email);
+  setStatus('bindDiscord', null, 'bindDiscordBtn', v.discord ? user.discord_tag || 'discord#0000' : '尚未綁定', v.discord);
+  setStatus('bindGoogle',  null, 'bindGoogleBtn',  v.google  ? user.google_email || '已綁定'       : '尚未綁定', v.google);
+  setStatus('bindRoblox',  null, 'bindRobloxBtn',  v.roblox  ? user.roblox_name  || 'Roblox 帳號'  : '尚未綁定', v.roblox);
+  setStatus('bindPhone',   null, 'bindPhoneBtn',   v.phone   ? user.phone_masked || '已綁定'        : '尚未綁定', v.phone);
+
+  if (v.roblox) document.getElementById('bindNotice')?.style.setProperty('display','none');
+}
+
+function bindPlatform(provider) {
+  const w = window.open(`../api/auth.php?action=bind&provider=${provider}&token=${AI.getToken()}`, 'bind', 'width=480,height=640');
+  const chk = setInterval(() => {
+    if (w && w.closed) { clearInterval(chk); loadBindings(); buildVerifyRings(); }
+  }, 500);
+}
+
+function bindRoblox() {
+  const username = document.getElementById('robloxUsername').value.trim();
+  const code     = document.getElementById('robloxCode').value.trim();
+  if (!username || !code) { showToast('error','請填寫完整','使用者名稱與驗證碼為必填'); return; }
+  apiFetch('user.php', {
+    method:'POST',
+    body: JSON.stringify({ action:'bind_roblox', username, code })
+  }).then(d => {
+    if (d.success) {
+      showToast('success','綁定成功！','Roblox 帳號已連結');
+      closeModal('robloxBindModal');
+      loadBindings(); buildVerifyRings();
+    } else showToast('error','綁定失敗', d.message);
+  });
+}
+
+function sendPhoneOTP() {
+  const phone = document.getElementById('phoneInput').value.trim();
+  if (!phone) { showToast('error','請輸入手機號碼'); return; }
+  apiFetch('user.php', { method:'POST', body: JSON.stringify({ action:'send_otp', phone }) })
+    .then(d => {
+      if (d.success) {
+        document.getElementById('phoneOTPSection').style.display = 'block';
+        document.getElementById('sendOTPBtn').style.display = 'none';
+        document.getElementById('verifyOTPBtn').style.display = 'block';
+        showToast('success','已發送','請查看您的簡訊');
+      } else showToast('error','發送失敗', d.message);
+    });
+}
+
+function verifyPhoneOTP() {
+  const otp   = document.getElementById('phoneOTP').value.trim();
+  const phone = document.getElementById('phoneInput').value.trim();
+  apiFetch('user.php', { method:'POST', body: JSON.stringify({ action:'verify_otp', phone, otp }) })
+    .then(d => {
+      if (d.success) {
+        showToast('success','手機號碼已綁定！');
+        closeModal('phoneBindModal');
+        loadBindings(); buildVerifyRings();
+      } else showToast('error','驗證失敗', d.message);
+    });
+}
+
+function changePwd() {
+  const cur  = document.getElementById('currentPwd').value;
+  const npwd = document.getElementById('newPwd').value;
+  const cnf  = document.getElementById('confirmNewPwd').value;
+  if (!cur || !npwd) { showToast('error','請填寫所有欄位'); return; }
+  if (npwd !== cnf)  { showToast('error','新密碼不一致'); return; }
+  if (npwd.length < 8) { showToast('error','密碼太短','至少需 8 個字元'); return; }
+  apiFetch('user.php', { method:'POST', body: JSON.stringify({ action:'change_password', current: cur, new_password: npwd }) })
+    .then(d => {
+      if (d.success) {
+        showToast('success','密碼已更新');
+        document.getElementById('currentPwd').value = '';
+        document.getElementById('newPwd').value = '';
+        document.getElementById('confirmNewPwd').value = '';
+      } else showToast('error','更新失敗', d.message);
+    });
+}
+
+function loadLoginLogs() {
+  setTimeout(() => {
+    document.getElementById('loginLogs').innerHTML = `
+      <table class="data-table">
+        <thead><tr><th>時間</th><th>裝置</th><th>IP</th><th>狀態</th></tr></thead>
+        <tbody>
+          <tr><td class="td-mono">2024-01-15 14:00</td><td>Chrome / Win10</td><td>xxx.xxx.xx.1</td><td><span class="badge badge-green">成功</span></td></tr>
+          <tr><td class="td-mono">2024-01-14 09:22</td><td>Safari / iOS</td><td>xxx.xxx.xx.2</td><td><span class="badge badge-green">成功</span></td></tr>
+          <tr><td class="td-mono">2024-01-13 21:05</td><td>Chrome / Mac</td><td>xxx.xxx.xx.3</td><td><span class="badge badge-green">成功</span></td></tr>
+        </tbody>
+      </table>
+    `;
+  }, 500);
+}
+
+function refreshData() {
+  const icon = document.getElementById('refreshIcon');
+  icon.classList.add('fa-spin');
+  loadAssets();
+  setTimeout(() => icon.classList.remove('fa-spin'), 1000);
+}
+
+function doRedeemDash() {
+  const code = document.getElementById('dashRedeemInput').value.trim();
+  if (code.length !== 10) { showToast('error','格式錯誤','兌換碼必須為 10 碼'); return; }
+  apiFetch('redeem.php', { method:'POST', body: JSON.stringify({ code }) })
+    .then(d => {
+      if (d.success) { showToast('success','兌換成功！', d.message); closeModal('redeemModal'); }
+      else showToast('error','兌換失敗', d.message);
+    });
+}
+
+function claimBirthday() {
+  apiFetch('user.php', { method:'POST', body: JSON.stringify({ action:'claim_birthday' }) })
+    .then(d => {
+      if (d.success) { showToast('success','生日快樂！','禮包已發送至您的帳戶 🎂'); document.getElementById('birthdayCard').style.display = 'none'; }
+    });
+}
+
+function sendReply() {
+  const v = document.getElementById('notifReplyDash').value.trim();
+  if (!v) return;
+  showToast('success','回覆已送出'); document.getElementById('notifReplyDash').value = '';
+  closeModal('notifModal');
+}
+
+function toggleNotif() { document.getElementById('notifDropdown').classList.toggle('open'); }
+
+// ── Task countdown ────────────────────────────────────
+function updateTaskCountdown() {
+  const now = new Date();
+  const midnight = new Date(now); midnight.setHours(24,0,0,0);
+  const diff = midnight - now;
+  const h = String(Math.floor(diff/3600000)).padStart(2,'0');
+  const m = String(Math.floor((diff%3600000)/60000)).padStart(2,'0');
+  const s = String(Math.floor((diff%60000)/1000)).padStart(2,'0');
+  const el = document.getElementById('taskCountdown');
+  if (el) el.textContent = `${h}:${m}:${s}`;
+}
+setInterval(updateTaskCountdown, 1000);
+updateTaskCountdown();
+
+// ── Boot ─────────────────────────────────────────────
+initUserUI();
+
+// Check new user
+if (new URLSearchParams(location.search).get('new') === '1') {
+  showToast('success', '歡迎加入！', '請完成帳號綁定以解鎖全部功能 🎮');
+  setTimeout(() => switchTab('bindings', null), 2000);
+}
+</script>
+</body>
+</html>

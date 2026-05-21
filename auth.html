@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登入 / 註冊 — Anime Infinite</title>
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    .auth-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-bg {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 60% at 0% 100%, rgba(255,45,85,0.08), transparent),
+        radial-gradient(ellipse 70% 70% at 100% 0%, rgba(0,210,255,0.08), transparent),
+        var(--bg-void);
+      z-index: 0;
+    }
+
+    .auth-grid-bg {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,210,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,210,255,0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
+      z-index: 0;
+    }
+
+    .auth-wrap {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 460px;
+    }
+
+    .auth-logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .auth-logo a {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: var(--text-primary);
+      text-decoration: none;
+    }
+
+    .auth-logo .logo-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      box-shadow: var(--glow-cyan);
+    }
+
+    .auth-box {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.5), var(--glow-cyan);
+    }
+
+    .auth-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .auth-tab-btn {
+      padding: 18px;
+      text-align: center;
+      font-family: var(--font-ui);
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      background: var(--bg-deep);
+      border: none;
+      border-bottom: 2px solid var(--border-dim);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .auth-tab-btn.active {
+      color: var(--accent-cyan);
+      background: var(--bg-panel);
+      border-bottom-color: var(--accent-cyan);
+    }
+
+    .auth-body { padding: 32px; }
+
+    .sso-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .btn-sso {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-ui);
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      border: 1px solid var(--border-dim);
+      transition: all var(--transition);
+      text-decoration: none;
+    }
+
+    .btn-sso.discord {
+      background: rgba(88,101,242,0.1);
+      color: #7289da;
+      border-color: rgba(88,101,242,0.3);
+    }
+
+    .btn-sso.discord:hover {
+      background: rgba(88,101,242,0.2);
+      border-color: rgba(88,101,242,0.5);
+      color: #7289da;
+    }
+
+    .btn-sso.google {
+      background: rgba(234,67,53,0.08);
+      color: #ea4335;
+      border-color: rgba(234,67,53,0.25);
+    }
+
+    .btn-sso.google:hover {
+      background: rgba(234,67,53,0.15);
+      border-color: rgba(234,67,53,0.4);
+      color: #ea4335;
+    }
+
+    .divider-text {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 20px 0;
+      font-family: var(--font-ui);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .divider-text::before,
+    .divider-text::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-dim);
+    }
+
+    .password-strength {
+      height: 4px;
+      border-radius: 2px;
+      background: var(--bg-elevated);
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .strength-bar {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.4s, background 0.4s;
+      width: 0%;
+    }
+
+    .strength-text {
+      font-size: 0.72rem;
+      margin-top: 4px;
+      transition: color 0.3s;
+    }
+
+    .step-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+
+    .step-dot {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--border-dim);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-ui);
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      transition: all var(--transition);
+    }
+
+    .step-dot.active {
+      border-color: var(--accent-cyan);
+      background: rgba(0,210,255,0.1);
+      color: var(--accent-cyan);
+    }
+
+    .step-dot.done {
+      border-color: var(--accent-green);
+      background: rgba(0,255,136,0.1);
+      color: var(--accent-green);
+    }
+
+    .step-line {
+      flex: 1;
+      height: 2px;
+      background: var(--border-dim);
+      transition: background var(--transition);
+    }
+
+    .step-line.done { background: var(--accent-green); }
+
+    .register-step { display: none; animation: fadeIn 0.3s ease; }
+    .register-step.active { display: block; }
+
+    .birthday-note {
+      background: rgba(0,210,255,0.06);
+      border: 1px solid rgba(0,210,255,0.2);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      margin-top: 12px;
+    }
+
+    .auth-footer {
+      text-align: center;
+      padding: 0 32px 28px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    /* Loading overlay */
+    .auth-loading {
+      position: absolute;
+      inset: 0;
+      background: rgba(7,11,20,0.85);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+      z-index: 10;
+      border-radius: var(--radius-lg);
+      display: none;
+    }
+
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border-dim);
+      border-top-color: var(--accent-cyan);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 480px) {
+      .sso-grid { grid-template-columns: 1fr; }
+      .auth-body { padding: 24px 20px; }
+    }
+  </style>
+</head>
+<body>
+<div class="toast-container" id="toastContainer"></div>
+<div class="auth-bg"></div>
+<div class="auth-grid-bg"></div>
+
+<div class="auth-page">
+  <div class="auth-wrap">
+    <!-- Logo -->
+    <div class="auth-logo">
+      <a href="index.html">
+        <div class="logo-icon">⚔️</div>
+        <span>ANIME <span style="color:var(--accent-cyan)">∞</span></span>
+      </a>
+      <div style="color:var(--text-muted);font-size:0.83rem;margin-top:8px">整合遊戲平台 · 三端聯動</div>
+    </div>
+
+    <div class="auth-box" style="position:relative">
+      <!-- Loading overlay -->
+      <div class="auth-loading" id="authLoading">
+        <div class="spinner"></div>
+        <div style="font-family:var(--font-ui);font-size:0.88rem;color:var(--text-secondary)" id="loadingText">驗證中...</div>
+      </div>
+
+      <!-- Tab buttons -->
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" id="loginTabBtn" onclick="switchAuthTab('login')">
+          <i class="fa-solid fa-right-to-bracket" style="margin-right:6px"></i>登入
+        </button>
+        <button class="auth-tab-btn" id="registerTabBtn" onclick="switchAuthTab('register')">
+          <i class="fa-solid fa-user-plus" style="margin-right:6px"></i>註冊
+        </button>
+      </div>
+
+      <!-- ── LOGIN PANEL ───────────────────────────────── -->
+      <div id="loginPanel" class="auth-body">
+        <!-- SSO -->
+        <div class="sso-grid">
+          <a href="api/auth.php?action=sso&provider=discord" class="btn-sso discord" onclick="startSSOFlow('discord',event)">
+            <i class="fa-brands fa-discord fa-lg"></i> Discord 登入
+          </a>
+          <a href="api/auth.php?action=sso&provider=google" class="btn-sso google" onclick="startSSOFlow('google',event)">
+            <i class="fa-brands fa-google fa-lg"></i> Google 登入
+          </a>
+        </div>
+
+        <div class="divider-text">或使用電子郵件</div>
+
+        <!-- Email login form -->
+        <div class="form-group">
+          <label class="form-label">電子郵件 / 暱稱</label>
+          <div class="input-group">
+            <i class="fa-solid fa-envelope input-icon"></i>
+            <input type="text" class="form-control" id="loginIdentifier" placeholder="your@email.com"
+              onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="display:flex;justify-content:space-between">
+            密碼
+            <a href="#" onclick="showForgotPassword(event)" style="font-size:0.78rem;font-weight:400;text-transform:none;letter-spacing:0;color:var(--accent-cyan)">忘記密碼？</a>
+          </label>
+          <div class="input-group">
+            <i class="fa-solid fa-lock input-icon"></i>
+            <input type="password" class="form-control" id="loginPassword" placeholder="••••••••"
+              onkeydown="if(event.key==='Enter')doLogin()">
+            <button class="input-action" onclick="togglePwd('loginPassword')">
+              <i class="fa-regular fa-eye" id="loginPwdEye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-check">
+            <input type="checkbox" id="rememberMe">
+            <span style="font-size:0.88rem;color:var(--text-secondary)">記住我 (30 天)</span>
+          </label>
+        </div>
+
+        <button class="btn btn-primary w-full" onclick="doLogin()" id="loginBtn">
+          <i class="fa-solid fa-right-to-bracket"></i> 登入
+        </button>
+
+        <div style="margin-top:16px;text-align:center;font-size:0.82rem;color:var(--text-muted)">
+          還沒有帳號？
+          <a href="#" onclick="switchAuthTab('register')" style="color:var(--accent-cyan);font-weight:700">立即免費加入</a>
+        </div>
+      </div>
+
+      <!-- ── REGISTER PANEL ────────────────────────────── -->
+      <div id="registerPanel" class="auth-body" style="display:none">
+        <!-- SSO Register -->
+        <div class="sso-grid">
+          <a href="#" class="btn-sso discord" onclick="startSSOFlow('discord',event)">
+            <i class="fa-brands fa-discord fa-lg"></i> Discord 快速註冊
+          </a>
+          <a href="#" class="btn-sso google" onclick="startSSOFlow('google',event)">
+            <i class="fa-brands fa-google fa-lg"></i> Google 快速註冊
+          </a>
+        </div>
+
+        <div class="divider-text">或填寫表單</div>
+
+        <!-- Step indicator -->
+        <div class="step-indicator">
+          <div class="step-dot active" id="step1dot">1</div>
+          <div class="step-line" id="step1line"></div>
+          <div class="step-dot" id="step2dot">2</div>
+          <div class="step-line" id="step2line"></div>
+          <div class="step-dot" id="step3dot">3</div>
+        </div>
+
+        <!-- Step 1: Account -->
+        <div class="register-step active" id="regStep1">
+          <div style="font-family:var(--font-display);font-size:1rem;font-weight:700;margin-bottom:16px;color:var(--accent-cyan)">建立帳號</div>
+
+          <div class="form-group">
+            <label class="form-label">電子郵件 <span style="color:var(--accent-crimson)">*</span></label>
+            <div class="input-group">
+              <i class="fa-solid fa-envelope input-icon"></i>
+              <input type="email" class="form-control" id="regEmail" placeholder="your@email.com">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">設定密碼 <span style="color:var(--accent-crimson)">*</span></label>
+            <div class="input-group">
+              <i class="fa-solid fa-lock input-icon"></i>
+              <input type="password" class="form-control" id="regPwd" placeholder="至少 8 碼" oninput="checkPwdStrength(this.value)">
+              <button class="input-action" onclick="togglePwd('regPwd')">
+                <i class="fa-regular fa-eye" id="regPwdEye"></i>
+              </button>
+            </div>
+            <div class="password-strength"><div class="strength-bar" id="strengthBar"></div></div>
+            <div class="strength-text text-muted" id="strengthText">輸入密碼以查看強度</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">確認密碼 <span style="color:var(--accent-crimson)">*</span></label>
+            <div class="input-group">
+              <i class="fa-solid fa-lock input-icon"></i>
+              <input type="password" class="form-control" id="regPwdConfirm" placeholder="再次輸入密碼">
+            </div>
+            <div class="form-error" id="pwdMatchErr" style="display:none">密碼不一致</div>
+          </div>
+
+          <button class="btn btn-primary w-full" onclick="nextRegStep(1)">
+            下一步 <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+
+        <!-- Step 2: Profile -->
+        <div class="register-step" id="regStep2">
+          <div style="font-family:var(--font-display);font-size:1rem;font-weight:700;margin-bottom:16px;color:var(--accent-cyan)">玩家資料</div>
+
+          <div class="form-group">
+            <label class="form-label">玩家暱稱 <span style="color:var(--accent-crimson)">*</span></label>
+            <div class="input-group">
+              <i class="fa-solid fa-user input-icon"></i>
+              <input type="text" class="form-control" id="regNickname" placeholder="2-20 個字元" maxlength="20">
+            </div>
+            <div class="form-hint">暱稱在平台上公開顯示</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">生日 <span style="color:var(--accent-crimson)">*</span></label>
+            <input type="date" class="form-control" id="regBirthday" max="">
+            <div class="birthday-note">
+              <i class="fa-solid fa-cake-candles" style="margin-right:6px;color:var(--accent-cyan)"></i>
+              生日資料用於自動發送生日禮包，不會公開顯示。
+            </div>
+          </div>
+
+          <div class="d-flex gap-10" style="gap:10px">
+            <button class="btn btn-ghost w-full" onclick="prevRegStep(2)">
+              <i class="fa-solid fa-arrow-left"></i> 上一步
+            </button>
+            <button class="btn btn-primary w-full" onclick="nextRegStep(2)">
+              下一步 <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 3: Security (Phone) -->
+        <div class="register-step" id="regStep3">
+          <div style="font-family:var(--font-display);font-size:1rem;font-weight:700;margin-bottom:16px;color:var(--accent-cyan)">安全驗證</div>
+
+          <div id="phoneSection">
+            <div class="form-group">
+              <label class="form-label">手機號碼</label>
+              <div class="input-group">
+                <i class="fa-solid fa-phone input-icon"></i>
+                <input type="tel" class="form-control" id="regPhone" placeholder="+886 9XX XXX XXX">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-check" id="noPhoneCheck">
+              <input type="checkbox" id="noPhone" onchange="toggleNoPhone(this.checked)">
+              <span style="font-size:0.88rem;color:var(--text-secondary)">我沒有手機號碼</span>
+            </label>
+          </div>
+
+          <!-- Security Q&A (shown when no phone) -->
+          <div id="securityQA" style="display:none">
+            <div class="form-group">
+              <label class="form-label">安全問題 <span style="color:var(--accent-crimson)">*</span></label>
+              <select class="form-control" id="secQuestion">
+                <option value="">請選擇問題</option>
+                <option>您的初中就讀學校名稱？</option>
+                <option>您的第一隻寵物名字？</option>
+                <option>您母親的娘家姓氏？</option>
+                <option>您最喜歡的動漫角色？</option>
+                <option>您童年最好的朋友叫什麼名字？</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">安全答案 <span style="color:var(--accent-crimson)">*</span></label>
+              <div class="input-group">
+                <i class="fa-solid fa-key input-icon"></i>
+                <input type="text" class="form-control" id="secAnswer" placeholder="輸入您的答案">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top:16px">
+            <label class="form-check">
+              <input type="checkbox" id="agreeTerms">
+              <span style="font-size:0.82rem;color:var(--text-secondary)">
+                我同意 <a href="#" style="color:var(--accent-cyan)">使用條款</a> 與
+                <a href="#" style="color:var(--accent-cyan)">隱私權政策</a>
+              </span>
+            </label>
+          </div>
+
+          <div class="d-flex gap-10" style="gap:10px">
+            <button class="btn btn-ghost w-full" onclick="prevRegStep(3)">
+              <i class="fa-solid fa-arrow-left"></i> 上一步
+            </button>
+            <button class="btn btn-primary w-full" onclick="doRegister()" id="registerBtn">
+              <i class="fa-solid fa-user-plus"></i> 完成註冊
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="auth-footer" id="authFooterNote">
+        <i class="fa-solid fa-shield-halved" style="color:var(--accent-cyan);margin-right:4px"></i>
+        資料以 AES-256 加密保護 · 遵循 OWASP Top 10
+      </div>
+    </div>
+
+    <!-- Back to home -->
+    <div style="text-align:center;margin-top:20px">
+      <a href="index.html" style="color:var(--text-muted);font-size:0.85rem">
+        <i class="fa-solid fa-arrow-left" style="margin-right:6px"></i>返回首頁
+      </a>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/main.js"></script>
+<script>
+  // ── Tab switch ────────────────────────────────────────
+  function switchAuthTab(mode) {
+    const isLogin = mode === 'login';
+    document.getElementById('loginTabBtn').classList.toggle('active', isLogin);
+    document.getElementById('registerTabBtn').classList.toggle('active', !isLogin);
+    document.getElementById('loginPanel').style.display   = isLogin ? 'block' : 'none';
+    document.getElementById('registerPanel').style.display = isLogin ? 'none'  : 'block';
+  }
+
+  // Auto-switch from URL param
+  const params = new URLSearchParams(location.search);
+  if (params.get('mode') === 'register') switchAuthTab('register');
+
+  // Redirect if already logged in
+  if (AI.isLoggedIn()) window.location.href = 'dashboard.html';
+
+  // ── Password visibility ───────────────────────────────
+  function togglePwd(fieldId) {
+    const field = document.getElementById(fieldId);
+    const eye   = document.getElementById(fieldId + 'Eye');
+    if (!field) return;
+    field.type = field.type === 'password' ? 'text' : 'password';
+    eye.className = field.type === 'password' ? 'fa-regular fa-eye' : 'fa-regular fa-eye-slash';
+  }
+
+  // ── Password strength ─────────────────────────────────
+  function checkPwdStrength(pwd) {
+    const bar  = document.getElementById('strengthBar');
+    const text = document.getElementById('strengthText');
+    if (!bar) return;
+    let score = 0;
+    if (pwd.length >= 8)  score++;
+    if (pwd.length >= 12) score++;
+    if (/[A-Z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd)) score++;
+    if (/[^A-Za-z0-9]/.test(pwd)) score++;
+
+    const levels = [
+      { pct: 0,   color: 'transparent',         label: '' },
+      { pct: 20,  color: 'var(--accent-crimson)',label: '非常弱' },
+      { pct: 40,  color: 'var(--accent-crimson)',label: '弱' },
+      { pct: 60,  color: 'var(--accent-gold)',   label: '一般' },
+      { pct: 80,  color: 'var(--accent-green)',  label: '強' },
+      { pct: 100, color: 'var(--accent-cyan)',   label: '非常強 💪' },
+    ];
+    const lv = levels[score];
+    bar.style.width = lv.pct + '%';
+    bar.style.background = lv.color;
+    text.textContent = lv.label;
+    text.style.color = lv.color;
+  }
+
+  // ── Step navigation ───────────────────────────────────
+  function nextRegStep(step) {
+    if (step === 1) {
+      // Validate
+      const email  = document.getElementById('regEmail').value.trim();
+      const pwd    = document.getElementById('regPwd').value;
+      const pwd2   = document.getElementById('regPwdConfirm').value;
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showToast('error','格式錯誤','請輸入有效的電子郵件'); return;
+      }
+      if (pwd.length < 8) {
+        showToast('error','密碼太短','密碼至少需要 8 個字元'); return;
+      }
+      if (pwd !== pwd2) {
+        document.getElementById('pwdMatchErr').style.display = 'block'; return;
+      }
+      document.getElementById('pwdMatchErr').style.display = 'none';
+    }
+    if (step === 2) {
+      const nick = document.getElementById('regNickname').value.trim();
+      const bday = document.getElementById('regBirthday').value;
+      if (!nick || nick.length < 2) {
+        showToast('error','暱稱太短','暱稱至少需要 2 個字元'); return;
+      }
+      if (!bday) {
+        showToast('error','請填寫生日','生日為必填欄位'); return;
+      }
+    }
+
+    document.getElementById(`regStep${step}`).classList.remove('active');
+    document.getElementById(`regStep${step + 1}`).classList.add('active');
+    document.getElementById(`step${step}dot`).classList.remove('active');
+    document.getElementById(`step${step}dot`).classList.add('done');
+    document.getElementById(`step${step}dot`).innerHTML = '✓';
+    document.getElementById(`step${step}line`).classList.add('done');
+    document.getElementById(`step${step + 1}dot`).classList.add('active');
+  }
+
+  function prevRegStep(step) {
+    document.getElementById(`regStep${step}`).classList.remove('active');
+    document.getElementById(`regStep${step - 1}`).classList.add('active');
+    document.getElementById(`step${step - 1}dot`).classList.remove('done');
+    document.getElementById(`step${step - 1}dot`).classList.add('active');
+    document.getElementById(`step${step - 1}dot`).innerHTML = String(step - 1);
+    document.getElementById(`step${step - 1}line`).classList.remove('done');
+    document.getElementById(`step${step}dot`).classList.remove('active');
+  }
+
+  function toggleNoPhone(checked) {
+    document.getElementById('phoneSection').style.display = checked ? 'none' : 'block';
+    document.getElementById('securityQA').style.display   = checked ? 'block' : 'none';
+  }
+
+  // ── Birthday max date (must be at least 13) ──────────
+  const maxBday = new Date();
+  maxBday.setFullYear(maxBday.getFullYear() - 13);
+  document.getElementById('regBirthday').max = maxBday.toISOString().split('T')[0];
+
+  // ── Do Login ──────────────────────────────────────────
+  async function doLogin() {
+    const identifier = document.getElementById('loginIdentifier').value.trim();
+    const password   = document.getElementById('loginPassword').value;
+    if (!identifier || !password) {
+      showToast('error','欄位不完整','請填寫所有欄位'); return;
+    }
+
+    setLoading(true, '驗證中...');
+    const data = await apiFetch('auth.php', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'login', identifier, password })
+    });
+    setLoading(false);
+
+    if (data.success) {
+      AI.setSession(data.token, data.user);
+      showToast('success', `歡迎回來，${data.user.nickname}！`);
+      setTimeout(() => {
+        window.location.href = data.user.role_level >= 8 ? 'admin/index.html' : 'dashboard.html';
+      }, 800);
+    } else {
+      showToast('error', '登入失敗', data.message || '帳號或密碼錯誤');
+    }
+  }
+
+  // ── Do Register ───────────────────────────────────────
+  async function doRegister() {
+    if (!document.getElementById('agreeTerms').checked) {
+      showToast('error','請同意條款','您必須同意使用條款才能註冊'); return;
+    }
+
+    const noPhone = document.getElementById('noPhone').checked;
+    if (noPhone) {
+      const q = document.getElementById('secQuestion').value;
+      const a = document.getElementById('secAnswer').value.trim();
+      if (!q || !a) {
+        showToast('error','安全問答','請完整填寫安全問答'); return;
+      }
+    }
+
+    const payload = {
+      action:    'register',
+      email:     document.getElementById('regEmail').value.trim(),
+      password:  document.getElementById('regPwd').value,
+      nickname:  document.getElementById('regNickname').value.trim(),
+      birthday:  document.getElementById('regBirthday').value,
+      phone:     noPhone ? null : document.getElementById('regPhone').value.trim(),
+      no_phone:  noPhone,
+      sec_q:     noPhone ? document.getElementById('secQuestion').value : null,
+      sec_a:     noPhone ? document.getElementById('secAnswer').value.trim() : null,
+    };
+
+    setLoading(true, '建立帳號中...');
+    const data = await apiFetch('auth.php', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    setLoading(false);
+
+    if (data.success) {
+      AI.setSession(data.token, data.user);
+      showToast('success', '帳號建立成功！', '正在跳轉至會員中心...');
+      setTimeout(() => window.location.href = 'dashboard.html?new=1', 1200);
+    } else {
+      showToast('error', '註冊失敗', data.message || '請稍後再試');
+    }
+  }
+
+  // ── SSO Flow ──────────────────────────────────────────
+  function startSSOFlow(provider, e) {
+    e.preventDefault();
+    setLoading(true, `連接 ${provider === 'discord' ? 'Discord' : 'Google'} 中...`);
+    // Open OAuth popup
+    const w = window.open(`api/auth.php?action=sso&provider=${provider}`, 'sso', 'width=480,height=640');
+    const check = setInterval(() => {
+      if (w && w.closed) {
+        clearInterval(check);
+        setLoading(false);
+        const u = AI.getUser();
+        if (u) {
+          showToast('success', `歡迎，${u.nickname}！`);
+          setTimeout(() => window.location.href = 'dashboard.html', 800);
+        }
+      }
+    }, 500);
+  }
+
+  function showForgotPassword(e) {
+    e.preventDefault();
+    const email = document.getElementById('loginIdentifier').value.trim();
+    if (!email) {
+      showToast('info','請先填寫Email','在上方填入您的電子郵件後再重置密碼');
+      return;
+    }
+    setLoading(true,'發送重置郵件中...');
+    apiFetch('auth.php', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'forgot_password', email })
+    }).then(data => {
+      setLoading(false);
+      if (data.success) showToast('success','郵件已發送','請檢查您的信箱（含垃圾郵件夾）');
+      else showToast('error','發送失敗', data.message);
+    });
+  }
+
+  function setLoading(show, text = '處理中...') {
+    const overlay = document.getElementById('authLoading');
+    document.getElementById('loadingText').textContent = text;
+    overlay.style.display = show ? 'flex' : 'none';
+  }
+</script>
+</body>
+</html>

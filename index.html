@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anime Infinite — 整合遊戲平台</title>
+  <meta name="description" content="戰鬥類動漫整合遊戲平台，Roblox、Web 與 Discord 三端無縫聯動">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    /* ── Page-specific styles ── */
+    .hero-carousel {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+
+    .carousel-slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 1.2s ease;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .carousel-slide.active { opacity: 1; }
+
+    .carousel-slide::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        90deg,
+        rgba(3,4,10,0.9) 0%,
+        rgba(3,4,10,0.5) 50%,
+        rgba(3,4,10,0.2) 100%
+      );
+    }
+
+    .slide-1 { background: linear-gradient(135deg, #03040a 0%, #0a1628 40%, #1a0530 100%); }
+    .slide-2 { background: linear-gradient(135deg, #03040a 0%, #150a10 40%, #300510 100%); }
+    .slide-3 { background: linear-gradient(135deg, #03040a 0%, #080e1a 40%, #051530 100%); }
+
+    /* Decorative character silhouette */
+    .hero-char {
+      position: absolute;
+      right: 8%;
+      bottom: 0;
+      height: 85%;
+      z-index: 1;
+      opacity: 0.85;
+      filter: drop-shadow(0 0 60px rgba(0,210,255,0.3));
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+
+    .hero-char-glow {
+      position: absolute;
+      right: 5%;
+      bottom: 0;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(ellipse, rgba(0,210,255,0.08), transparent);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Floating data panels */
+    .hero-data-panel {
+      position: absolute;
+      background: rgba(12,18,32,0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      font-family: var(--font-ui);
+      font-size: 0.82rem;
+      z-index: 3;
+      animation: floatPanel 6s ease-in-out infinite;
+    }
+
+    @keyframes floatPanel {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .panel-top-right {
+      top: 20%;
+      right: 32%;
+      animation-delay: 0s;
+    }
+
+    .panel-bottom-right {
+      bottom: 20%;
+      right: 28%;
+      animation-delay: 3s;
+    }
+
+    /* Carousel dots */
+    .carousel-dots {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      z-index: 10;
+    }
+
+    .carousel-dot {
+      width: 6px; height: 6px;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.3);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .carousel-dot.active {
+      width: 24px;
+      background: var(--accent-cyan);
+      box-shadow: var(--glow-cyan);
+    }
+
+    /* Scroll indicator */
+    .scroll-hint {
+      position: absolute;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-ui);
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      z-index: 5;
+      animation: fadeInUp 1s ease 2s both;
+    }
+
+    .scroll-hint .arrow {
+      animation: scrollArrow 1.5s ease infinite;
+    }
+
+    @keyframes scrollArrow {
+      0%, 100% { transform: translateY(0); opacity: 1; }
+      50% { transform: translateY(8px); opacity: 0.4; }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    /* Hero content animations */
+    .hero-tag    { animation: revealUp 0.7s ease 0.2s both; }
+    .hero-title  { animation: revealUp 0.7s ease 0.4s both; }
+    .hero-desc   { animation: revealUp 0.7s ease 0.6s both; }
+    .hero-cta    { animation: revealUp 0.7s ease 0.8s both; }
+    .hero-stats  { animation: revealUp 0.7s ease 1.0s both; }
+
+    @keyframes revealUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Redeem input glow */
+    .redeem-input-wrap {
+      display: flex;
+      gap: 10px;
+    }
+
+    .redeem-input-wrap .form-control {
+      font-family: monospace;
+      font-size: 1.1rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    /* Section spacing */
+    .section { padding: 80px 0; }
+    .section-sm { padding: 48px 0; }
+
+    /* Feature cards */
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      padding: 28px;
+      transition: all var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
+      transform: scaleX(0);
+      transition: transform var(--transition);
+    }
+
+    .feature-card:hover { border-color: var(--border-glow); transform: translateY(-4px); }
+    .feature-card:hover::before { transform: scaleX(1); }
+
+    .feature-icon {
+      width: 52px; height: 52px;
+      border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+      margin-bottom: 16px;
+    }
+
+    .fi-cyan    { background: rgba(0,210,255,0.1); color: var(--accent-cyan); }
+    .fi-crimson { background: rgba(255,45,85,0.1);  color: var(--accent-crimson); }
+    .fi-gold    { background: rgba(255,209,102,0.1);color: var(--accent-gold); }
+    .fi-purple  { background: rgba(168,85,247,0.1); color: var(--accent-purple); }
+    .fi-green   { background: rgba(0,255,136,0.1);  color: var(--accent-green); }
+    .fi-blue    { background: rgba(58,123,255,0.1); color: var(--accent-blue); }
+
+    .feature-title {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .feature-desc {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    /* Season banner */
+    .season-banner {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-lg);
+      padding: 40px 48px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      gap: 40px;
+    }
+
+    .season-banner::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 80% at 80% 50%, rgba(0,210,255,0.06), transparent),
+        radial-gradient(ellipse 40% 60% at 10% 50%, rgba(255,45,85,0.04), transparent);
+      pointer-events: none;
+    }
+
+    .season-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0,210,255,0.1);
+      border: 1px solid rgba(0,210,255,0.3);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-family: var(--font-ui);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent-cyan);
+      margin-bottom: 16px;
+    }
+
+    .season-emoji { font-size: 8rem; line-height: 1; filter: drop-shadow(0 0 40px rgba(0,210,255,0.4)); }
+
+    /* Grid helpers */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+
+    @media (max-width: 1024px) {
+      .grid-4 { grid-template-columns: repeat(2,1fr); }
+      .grid-3 { grid-template-columns: repeat(2,1fr); }
+    }
+
+    @media (max-width: 768px) {
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .season-banner { flex-direction: column; padding: 28px; }
+      .hero-data-panel { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ Toast Container ══════════════════════════════════════ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ══ Navbar ════════════════════════════════════════════════ -->
+<nav id="navbar">
+  <div class="container">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-logo">
+        <div class="logo-icon">⚔️</div>
+        <div class="logo-text">ANIME <span>∞</span></div>
+      </a>
+
+      <div class="navbar-nav" id="navMenu">
+        <a href="index.html"  class="nav-link active" data-i18n="nav.home">首頁</a>
+        <a href="news.html"   class="nav-link" data-i18n="nav.news">最新資訊</a>
+        <a href="news.html?tab=patch" class="nav-link" data-i18n="nav.patch">更新爆料</a>
+        <a href="news.html?tab=guide" class="nav-link" data-i18n="nav.guide">攻略分享</a>
+        <a href="store.html"  class="nav-link" data-i18n="nav.store">儲值商城</a>
+      </div>
+
+      <div class="navbar-actions">
+        <!-- Notification Bell (only shown when logged in) -->
+        <div class="position-relative d-none" id="notifWrap" style="position:relative">
+          <button class="btn-notif" id="notifBtn" onclick="toggleNotif()">
+            <i class="fa-solid fa-bell"></i>
+            <span class="notif-badge" id="notifCount">3</span>
+          </button>
+          <!-- Notification Dropdown -->
+          <div class="notif-dropdown" id="notifDropdown">
+            <div class="notif-header">
+              <span>通知中心</span>
+              <button onclick="markAllRead()" style="background:transparent;border:none;color:var(--accent-cyan);cursor:pointer;font-family:var(--font-ui);font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase">全部已讀</button>
+            </div>
+            <div id="notifList">
+              <div class="notif-item unread" onclick="openNotifModal(1)">
+                <div class="notif-icon">🎉</div>
+                <div class="notif-body">
+                  <div class="notif-title">恭喜您！晉升通知</div>
+                  <div class="notif-preview">恭喜您已被提名晉升為攻略達人，請詳細閱讀以下...</div>
+                </div>
+                <div class="notif-time">2分鐘前</div>
+              </div>
+              <div class="notif-item unread" onclick="openNotifModal(2)">
+                <div class="notif-icon">💎</div>
+                <div class="notif-body">
+                  <div class="notif-title">生日禮包已發送</div>
+                  <div class="notif-preview">您的生日禮包「星辰禮盒」已成功發送至您的帳戶...</div>
+                </div>
+                <div class="notif-time">1小時前</div>
+              </div>
+              <div class="notif-item" onclick="openNotifModal(3)">
+                <div class="notif-icon" style="background:rgba(255,45,85,0.1);color:var(--accent-crimson)">⚠️</div>
+                <div class="notif-body">
+                  <div class="notif-title">帳號安全提醒</div>
+                  <div class="notif-preview">偵測到您的帳號於新裝置登入，若非本人操作...</div>
+                </div>
+                <div class="notif-time">昨天</div>
+              </div>
+            </div>
+            <button class="notif-read-btn">查看全部通知</button>
+          </div>
+        </div>
+
+        <button class="lang-toggle" onclick="toggleLang()" id="langBtn">EN</button>
+
+        <div id="authButtons">
+          <a href="auth.html" class="btn btn-outline btn-sm" data-i18n="nav.login">登入</a>
+          <a href="auth.html?mode=register" class="btn btn-primary btn-sm" data-i18n="nav.register">免費加入</a>
+        </div>
+
+        <div id="userMenu" class="d-none">
+          <a href="dashboard.html" class="btn btn-ghost btn-sm">
+            <i class="fa-solid fa-user"></i>
+            <span id="navUsername">玩家</span>
+          </a>
+          <button onclick="logout()" class="btn btn-ghost btn-sm">登出</button>
+        </div>
+
+        <button class="navbar-toggle" onclick="toggleMobileNav()">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ══ Hero Section ══════════════════════════════════════════ -->
+<section class="hero">
+  <!-- Carousel background -->
+  <div class="hero-carousel" id="heroCarousel">
+    <div class="carousel-slide slide-1 active"></div>
+    <div class="carousel-slide slide-2"></div>
+    <div class="carousel-slide slide-3"></div>
+  </div>
+
+  <!-- Grid overlay -->
+  <div class="hero-grid-overlay"></div>
+
+  <!-- Floating glow -->
+  <div class="hero-char-glow"></div>
+
+  <!-- Floating data panels -->
+  <div class="hero-data-panel panel-top-right">
+    <div style="color:var(--text-muted);margin-bottom:4px;font-size:0.7rem;letter-spacing:0.1em">SEASON 3 · LIVE</div>
+    <div style="font-size:1.1rem;font-weight:800;font-family:var(--font-display);color:var(--accent-cyan)">暗影領域</div>
+    <div style="font-size:0.78rem;color:var(--text-secondary);margin-top:4px">Battle Pass 第二章</div>
+  </div>
+
+  <div class="hero-data-panel panel-bottom-right">
+    <div class="d-flex align-center gap-8">
+      <div class="status-dot"></div>
+      <span style="color:var(--accent-green);font-weight:700">12,481 人在線</span>
+    </div>
+    <div style="color:var(--text-muted);font-size:0.75rem;margin-top:4px">Roblox 伺服器狀態 · 正常</div>
+  </div>
+
+  <!-- Main content -->
+  <div class="container" style="position:relative;z-index:5">
+    <div style="max-width:600px">
+      <div class="hero-tag">
+        <div class="server-status-widget">
+          <div class="status-dot" id="heroStatusDot"></div>
+          <span id="heroStatusText">伺服器正常運行</span>
+          <span style="opacity:0.5">·</span>
+          <span id="heroOnline" style="font-weight:800">12,481</span> 在線
+        </div>
+      </div>
+
+      <h1 class="display-title hero-title" style="margin-top:24px;margin-bottom:20px">
+        戰鬥的<br>極限，<br>就在此刻
+      </h1>
+
+      <p class="hero-desc" style="font-size:1.05rem;color:var(--text-secondary);line-height:1.8;margin-bottom:32px">
+        Anime Infinite — 整合 Roblox × Web × Discord 三端聯動的次世代動漫戰鬥平台。掌握最新情報，解鎖專屬獎勵，與全球玩家共同征戰。
+      </p>
+
+      <div class="d-flex gap-12 hero-cta" style="flex-wrap:wrap">
+        <a href="auth.html?mode=register" class="btn btn-primary btn-lg">
+          <i class="fa-solid fa-rocket"></i> 立即加入
+        </a>
+        <a href="news.html" class="btn btn-outline btn-lg">
+          <i class="fa-solid fa-newspaper"></i> 最新資訊
+        </a>
+      </div>
+
+      <!-- Quick stats -->
+      <div class="d-flex gap-24 hero-stats" style="margin-top:40px;flex-wrap:wrap">
+        <div>
+          <div style="font-family:var(--font-display);font-size:1.6rem;font-weight:800;color:var(--accent-cyan)">150K+</div>
+          <div style="font-size:0.8rem;color:var(--text-muted);letter-spacing:0.08em;text-transform:uppercase">註冊玩家</div>
+        </div>
+        <div style="width:1px;background:var(--border-dim)"></div>
+        <div>
+          <div style="font-family:var(--font-display);font-size:1.6rem;font-weight:800;color:var(--accent-crimson)">S3</div>
+          <div style="font-size:0.8rem;color:var(--text-muted);letter-spacing:0.08em;text-transform:uppercase">當前賽季</div>
+        </div>
+        <div style="width:1px;background:var(--border-dim)"></div>
+        <div>
+          <div style="font-family:var(--font-display);font-size:1.6rem;font-weight:800;color:var(--accent-gold)">4.9★</div>
+          <div style="font-size:0.8rem;color:var(--text-muted);letter-spacing:0.08em;text-transform:uppercase">玩家評分</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Carousel dots -->
+  <div class="carousel-dots" id="carouselDots">
+    <div class="carousel-dot active" onclick="gotoSlide(0)"></div>
+    <div class="carousel-dot" onclick="gotoSlide(1)"></div>
+    <div class="carousel-dot" onclick="gotoSlide(2)"></div>
+  </div>
+</section>
+
+<!-- ══ Quick Redeem + Server Status ══════════════════════════ -->
+<section class="section-sm">
+  <div class="container">
+    <div class="grid-2" style="gap:24px;align-items:start">
+
+      <!-- Quick Redeem -->
+      <div class="quick-redeem">
+        <div class="redeem-glow"></div>
+        <div class="d-flex align-center gap-12 mb-16">
+          <div style="width:40px;height:40px;background:rgba(0,210,255,0.1);border:1px solid rgba(0,210,255,0.3);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.1rem">🎁</div>
+          <div>
+            <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:700">快速兌換</div>
+            <div style="font-size:0.8rem;color:var(--text-muted)">輸入 10 碼福利兌換碼</div>
+          </div>
+        </div>
+
+        <div class="redeem-input-wrap" id="redeemArea">
+          <input type="text" class="form-control" id="redeemInput" maxlength="10" placeholder="XXXXXXXXXX"
+            style="font-family:monospace;font-size:1.1rem;letter-spacing:0.2em;text-align:center;text-transform:uppercase"
+            oninput="onRedeemInput(this)">
+          <button class="btn btn-primary" onclick="redeemCode()" id="redeemBtn">
+            <i class="fa-solid fa-gift"></i> 兌換
+          </button>
+        </div>
+
+        <!-- Locked state (not logged in) -->
+        <div id="redeemLocked" class="d-none">
+          <div style="background:rgba(0,0,0,0.3);border:1px dashed var(--border-dim);border-radius:var(--radius-sm);padding:20px;text-align:center">
+            <div style="font-size:1.5rem;margin-bottom:8px">🔒</div>
+            <div style="font-family:var(--font-ui);font-size:0.88rem;color:var(--text-muted)">請先登入以使用兌換功能</div>
+            <a href="auth.html" class="btn btn-outline btn-sm" style="margin-top:12px">立即登入</a>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;font-size:0.78rem;color:var(--text-muted)">
+          <i class="fa-solid fa-circle-info" style="margin-right:4px"></i>
+          兌換碼區分大小寫，每組碼限使用一次
+        </div>
+      </div>
+
+      <!-- Server Status -->
+      <div class="card-panel" style="padding:24px">
+        <div style="font-family:var(--font-ui);font-size:0.78rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:16px">
+          // 即時狀態
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg-card);border-radius:var(--radius-sm);border:1px solid var(--border-dim)">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:1.1rem">🎮</span>
+              <div>
+                <div style="font-family:var(--font-ui);font-weight:600;font-size:0.9rem">Roblox 遊戲伺服器</div>
+                <div style="font-size:0.75rem;color:var(--text-muted)">Anime Infinite Official</div>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div class="api-light ok"><div class="dot"></div><span style="color:var(--accent-green)" id="robloxOnline">12,481</span></div>
+              <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">玩家在線</div>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg-card);border-radius:var(--radius-sm);border:1px solid var(--border-dim)">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:1.1rem">💬</span>
+              <div>
+                <div style="font-family:var(--font-ui);font-weight:600;font-size:0.9rem">Discord 社群</div>
+                <div style="font-size:0.75rem;color:var(--text-muted)">語音頻道活躍人數</div>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div class="api-light ok"><div class="dot"></div><span style="color:var(--accent-green)" id="dcActive">847</span></div>
+              <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">語音活躍</div>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg-card);border-radius:var(--radius-sm);border:1px solid var(--border-dim)">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:1.1rem">🌐</span>
+              <div>
+                <div style="font-family:var(--font-ui);font-weight:600;font-size:0.9rem">Web 平台</div>
+                <div style="font-size:0.75rem;color:var(--text-muted)">API 及金流系統</div>
+              </div>
+            </div>
+            <div class="api-light ok">
+              <div class="dot"></div>
+              <span style="color:var(--accent-green)">正常運行</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;font-size:0.72rem;color:var(--text-muted);text-align:right">
+          最後更新：<span id="lastUpdate">剛剛</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ Season Banner ═════════════════════════════════════════ -->
+<section class="section-sm" style="padding-top:0">
+  <div class="container">
+    <div class="season-banner">
+      <div class="season-emoji">⚔️</div>
+      <div style="flex:1;position:relative;z-index:1">
+        <div class="season-badge">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-cyan);display:inline-block;box-shadow:var(--glow-cyan)"></span>
+          第三賽季 · 暗影領域
+        </div>
+        <h2 class="section-title" style="margin-bottom:12px">新賽季已正式開啟</h2>
+        <p style="color:var(--text-secondary);font-size:0.95rem;line-height:1.7;max-width:480px">
+          全新戰鬥系統、暗影系角色強勢登場。完成賽季任務解鎖限定稱號「黑夜領主」，挑戰頂點戰鬥成為本賽季霸主。
+        </p>
+        <div class="d-flex gap-12" style="margin-top:20px">
+          <a href="news.html" class="btn btn-primary">了解更多 <i class="fa-solid fa-arrow-right"></i></a>
+          <a href="store.html" class="btn btn-outline">賽季商城</a>
+        </div>
+      </div>
+      <div style="text-align:right;position:relative;z-index:1;flex-shrink:0">
+        <div style="font-family:var(--font-display);font-size:3rem;font-weight:900;color:var(--accent-cyan);line-height:1;text-shadow:var(--glow-cyan)">27</div>
+        <div style="font-size:0.78rem;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase">天後結束</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ Features ══════════════════════════════════════════════ -->
+<section class="section">
+  <div class="container">
+    <div style="text-align:center;margin-bottom:48px">
+      <h2 class="section-title" style="margin-bottom:12px">平台核心功能</h2>
+      <p style="color:var(--text-secondary);font-size:0.95rem;max-width:500px;margin:0 auto">
+        三端無縫整合，讓遊戲體驗超越邊界
+      </p>
+    </div>
+
+    <div class="grid-3">
+      <div class="feature-card">
+        <div class="feature-icon fi-cyan"><i class="fa-brands fa-discord"></i></div>
+        <div class="feature-title">Discord 三端聯動</div>
+        <div class="feature-desc">自動綁定認證、Webhook 即時推播、Bot 指令 /profile /redeem /report，讓社群與遊戲無縫連結。</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-crimson"><i class="fa-solid fa-bolt"></i></div>
+        <div class="feature-title">即時資產管理</div>
+        <div class="feature-desc">Web 點數與 Roblox 遊戲內資產即時同步，儲值紀錄透明可查，讓你掌握每一筆交易。</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-gold"><i class="fa-solid fa-gift"></i></div>
+        <div class="feature-title">智慧福利系統</div>
+        <div class="feature-desc">10 碼自動兌換碼、生日禮包自動排程發放、任務完成獎勵，全自動化的獎勵分發機制。</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-purple"><i class="fa-solid fa-shield-halved"></i></div>
+        <div class="feature-title">企業級資安架構</div>
+        <div class="feature-desc">遵循 OWASP Top 10 標準，RBAC 嚴格權限控制、AES-256 加密、金流 Webhook 二次驗證。</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-green"><i class="fa-solid fa-users"></i></div>
+        <div class="feature-title">12 階層社群生態</div>
+        <div class="feature-desc">從一般使用者到總管理員，完善的晉升制度與自動化流程，建立健康的玩家社群生態系。</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-blue"><i class="fa-solid fa-sliders"></i></div>
+        <div class="feature-title">遊戲參數實時控制</div>
+        <div class="feature-desc">管理員透過 Web 表單直接控制 Roblox 遊戲參數，所有操作寫入稽核日誌，防止濫權。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ Latest News Preview ═══════════════════════════════════ -->
+<section class="section" style="padding-top:0">
+  <div class="container">
+    <div class="d-flex align-center justify-between mb-32">
+      <h2 class="section-title">最新資訊</h2>
+      <a href="news.html" class="btn btn-ghost btn-sm">查看全部 <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+
+    <div class="grid-3" id="newsPreview">
+      <!-- News cards generated by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ══ Stats Banner ══════════════════════════════════════════ -->
+<section class="section-sm" style="padding-top:0">
+  <div class="container">
+    <div class="grid-4">
+      <div class="stat-card cyan">
+        <div class="stat-label">registered players</div>
+        <div class="stat-value text-cyan" id="statPlayers">150,000+</div>
+        <div class="stat-label">總註冊玩家</div>
+      </div>
+      <div class="stat-card crimson">
+        <div class="stat-label">battles today</div>
+        <div class="stat-value text-crimson" id="statBattles">8.2M</div>
+        <div class="stat-label">今日戰鬥場次</div>
+      </div>
+      <div class="stat-card gold">
+        <div class="stat-label">codes redeemed</div>
+        <div class="stat-value text-gold" id="statCodes">320K</div>
+        <div class="stat-label">兌換碼已使用</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">uptime</div>
+        <div class="stat-value text-green">99.9%</div>
+        <div class="stat-label">平台可用率</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ CTA Banner ════════════════════════════════════════════ -->
+<section class="section">
+  <div class="container">
+    <div style="background:var(--bg-panel);border:1px solid var(--border-glow);border-radius:var(--radius-lg);padding:60px 48px;text-align:center;position:relative;overflow:hidden">
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse 80% 100% at 50% 100%,rgba(0,210,255,0.06),transparent);pointer-events:none"></div>
+      <div style="position:relative;z-index:1">
+        <div style="font-size:3rem;margin-bottom:16px">⚔️✨</div>
+        <h2 class="section-title" style="font-size:2rem;margin-bottom:16px">準備好投入戰場了嗎？</h2>
+        <p style="color:var(--text-secondary);font-size:1rem;max-width:400px;margin:0 auto 32px;line-height:1.7">
+          免費加入 Anime Infinite，解鎖三端聯動的完整體驗，與十五萬名玩家共同征戰。
+        </p>
+        <div class="d-flex gap-12 justify-center" style="flex-wrap:wrap">
+          <a href="auth.html?mode=register" class="btn btn-primary btn-lg">
+            <i class="fa-solid fa-rocket"></i> 免費加入
+          </a>
+          <a href="https://discord.gg/anime-infinite" target="_blank" class="btn btn-outline btn-lg">
+            <i class="fa-brands fa-discord"></i> 加入 Discord
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ Footer ════════════════════════════════════════════════ -->
+<footer id="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <!-- Brand -->
+      <div>
+        <div class="navbar-logo" style="margin-bottom:16px;display:inline-flex">
+          <div class="logo-icon">⚔️</div>
+          <div class="logo-text">ANIME <span>∞</span></div>
+        </div>
+        <p style="color:var(--text-muted);font-size:0.88rem;line-height:1.7;max-width:280px">
+          整合 Roblox、Web 與 Discord 的次世代動漫戰鬥平台，為玩家提供最完整的遊戲生態體驗。
+        </p>
+        <div class="d-flex gap-8" style="margin-top:16px">
+          <a href="#" class="btn btn-ghost btn-sm"><i class="fa-brands fa-discord"></i></a>
+          <a href="#" class="btn btn-ghost btn-sm"><i class="fa-brands fa-youtube"></i></a>
+          <a href="#" class="btn btn-ghost btn-sm"><i class="fa-brands fa-twitter"></i></a>
+        </div>
+      </div>
+
+      <!-- Platform -->
+      <div>
+        <div class="footer-col-title">平台</div>
+        <a href="news.html" class="footer-link">最新資訊</a>
+        <a href="news.html?tab=patch" class="footer-link">更新爆料</a>
+        <a href="news.html?tab=guide" class="footer-link">攻略分享</a>
+        <a href="store.html" class="footer-link">儲值商城</a>
+        <a href="dashboard.html" class="footer-link">會員中心</a>
+      </div>
+
+      <!-- Legal -->
+      <div>
+        <div class="footer-col-title">法律與設定</div>
+        <a href="#" class="footer-link">隱私權政策</a>
+        <a href="#" class="footer-link">使用條款</a>
+        <a href="#" class="footer-link">Cookie 政策</a>
+        <a href="#" class="footer-link" onclick="toggleTheme()">
+          <i class="fa-solid fa-circle-half-stroke" style="margin-right:6px"></i> 切換主題
+        </a>
+        <a href="#" class="footer-link" onclick="toggleLang()">
+          <i class="fa-solid fa-globe" style="margin-right:6px"></i> 語言切換
+        </a>
+      </div>
+
+      <!-- Partner -->
+      <div>
+        <div class="footer-col-title">商業合作</div>
+        <p style="color:var(--text-muted);font-size:0.83rem;line-height:1.7;margin-bottom:16px">
+          歡迎品牌合作、贊助與內容創作者合作諮詢。
+        </p>
+        <a href="admin/login.html" class="partner-link">
+          <i class="fa-solid fa-handshake"></i>
+          合作夥伴通道
+        </a>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <span>© 2024 Anime Infinite. All Rights Reserved.</span>
+      <span>Powered by Roblox · Discord · PHP · MySQL</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ══ Notification Modal ════════════════════════════════════ -->
+<div class="modal-overlay" id="notifModal" onclick="closeOnOverlay(event,'notifModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div style="font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">通知詳情</div>
+        <div class="modal-title" id="modalNotifTitle">通知標題</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('notifModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:16px" id="modalNotifTime">2024-01-01 12:00:00</div>
+      <div id="modalNotifBody" style="color:var(--text-secondary);line-height:1.8;font-size:0.95rem"></div>
+    </div>
+    <div class="modal-footer">
+      <div style="font-family:var(--font-ui);font-size:0.78rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px">回覆管理員</div>
+      <div class="input-group">
+        <input type="text" class="form-control" id="notifReply" placeholder="輸入您的回覆...">
+        <button class="input-action" onclick="sendNotifReply()"><i class="fa-solid fa-paper-plane" style="color:var(--accent-cyan)"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/main.js"></script>
+<script>
+  // ── Carousel ──────────────────────────────────────────
+  let currentSlide = 0;
+  const slides = document.querySelectorAll('.carousel-slide');
+  const dots   = document.querySelectorAll('.carousel-dot');
+
+  function gotoSlide(n) {
+    slides[currentSlide].classList.remove('active');
+    dots[currentSlide].classList.remove('active');
+    currentSlide = n;
+    slides[currentSlide].classList.add('active');
+    dots[currentSlide].classList.add('active');
+  }
+
+  setInterval(() => gotoSlide((currentSlide + 1) % slides.length), 5000);
+
+  // ── Navbar scroll ────────────────────────────────────
+  window.addEventListener('scroll', () => {
+    document.getElementById('navbar').classList.toggle('scrolled', scrollY > 40);
+  });
+
+  // ── Notification dropdown ────────────────────────────
+  function toggleNotif() {
+    document.getElementById('notifDropdown').classList.toggle('open');
+  }
+
+  document.addEventListener('click', e => {
+    const wrap = document.getElementById('notifWrap');
+    if (wrap && !wrap.contains(e.target)) {
+      document.getElementById('notifDropdown')?.classList.remove('open');
+    }
+  });
+
+  function markAllRead() {
+    document.querySelectorAll('.notif-item.unread').forEach(el => el.classList.remove('unread'));
+    const badge = document.getElementById('notifCount');
+    if (badge) { badge.style.display = 'none'; }
+    showToast('success','已讀','所有通知已標記為已讀');
+  }
+
+  // Notification data
+  const notifData = {
+    1: {
+      title: '🎉 恭喜您！晉升通知',
+      time: '2024-01-15 09:32:11',
+      body: `恭喜您！您已被提名晉升為【攻略達人】。<br><br>請詳細閱讀以下權責明細：<br><br>• 您將獲得在平台發表攻略文章的權限<br>• 您的文章將顯示「攻略達人」專屬標籤<br>• 享有優先測試新功能的資格<br><br>請於 <strong style="color:var(--accent-cyan)">7 天內</strong>於下方框格回覆我們以確認領取資格。若超時未回覆，資格將自動取消。`
+    },
+    2: {
+      title: '💎 生日禮包已發送',
+      time: '2024-01-15 00:00:01',
+      body: `親愛的玩家，生日快樂！🎂<br><br>您的生日禮包「星辰禮盒」已成功發送至您的帳戶，包含：<br><br>• 限定稱號「星辰旅人」×1<br>• 進階兌換碼 ×3<br>• 點數 500 P<br><br>禮包效期為 <strong style="color:var(--accent-gold)">7 天</strong>，請盡快領取！`
+    },
+    3: {
+      title: '⚠️ 帳號安全提醒',
+      time: '2024-01-14 18:22:05',
+      body: `偵測到您的帳號於新裝置登入，詳細資訊如下：<br><br>• 登入時間：2024-01-14 18:20:33<br>• 裝置：Chrome / Windows 10<br>• IP 位址：xxx.xxx.xxx.xxx (台灣)<br><br>若非本人操作，請立即<a href="#" style="color:var(--accent-cyan)">修改密碼</a>並聯絡客服。若為本人操作，請忽略此通知。`
+    }
+  };
+
+  function openNotifModal(id) {
+    const data = notifData[id];
+    if (!data) return;
+    document.getElementById('modalNotifTitle').textContent = data.title;
+    document.getElementById('modalNotifTime').textContent  = data.time;
+    document.getElementById('modalNotifBody').innerHTML    = data.body;
+    openModal('notifModal');
+    // Mark read receipt
+    fetch(`api/notifications.php?action=mark_read&id=${id}`, { method: 'POST' }).catch(() => {});
+  }
+
+  function sendNotifReply() {
+    const val = document.getElementById('notifReply').value.trim();
+    if (!val) return;
+    showToast('success','回覆已送出','您的回覆已成功送達管理員');
+    document.getElementById('notifReply').value = '';
+    closeModal('notifModal');
+  }
+
+  // ── Quick Redeem ─────────────────────────────────────
+  function onRedeemInput(el) {
+    el.value = el.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  }
+
+  function redeemCode() {
+    const code = document.getElementById('redeemInput').value.trim();
+    if (code.length !== 10) {
+      showToast('error','格式錯誤','兌換碼必須為 10 碼英數字元');
+      return;
+    }
+    const btn = document.getElementById('redeemBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 驗證中';
+
+    fetch(`api/redeem.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        showToast('success','兌換成功！',data.message || '獎勵已發送至您的帳戶');
+        document.getElementById('redeemInput').value = '';
+      } else {
+        showToast('error','兌換失敗',data.message || '無效或已使用的兌換碼');
+      }
+    })
+    .catch(() => showToast('error','連線錯誤','請稍後再試'))
+    .finally(() => {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-gift"></i> 兌換';
+    });
+  }
+
+  // ── News preview data ────────────────────────────────
+  const previewNews = [
+    { emoji:'⚔️', cat:'遊戲更新', title:'第三賽季「暗影領域」正式開啟，全新戰鬥系統解說', meta:'2024-01-15 · 12分鐘閱讀', views:'8.2K', likes:'341' },
+    { emoji:'🌟', cat:'攻略分享', title:'新手必看！暗影系角色全攻略 — 技能連段與配裝指南', meta:'2024-01-14 · 8分鐘閱讀', views:'15.4K', likes:'892' },
+    { emoji:'🎁', cat:'活動公告', title:'1月限定活動「星辰之戰」開跑，限定稱號等你拿！', meta:'2024-01-13 · 5分鐘閱讀', views:'22.1K', likes:'1.2K' },
+  ];
+
+  document.getElementById('newsPreview').innerHTML = previewNews.map(n => `
+    <article class="news-card">
+      <div class="news-card-img">${n.emoji}</div>
+      <div class="news-card-body">
+        <div class="news-card-cat">${n.cat}</div>
+        <h3 class="news-card-title"><a href="news.html" style="color:inherit;text-decoration:none">${n.title}</a></h3>
+        <div class="news-card-meta">
+          <span><i class="fa-regular fa-clock"></i> ${n.meta}</span>
+        </div>
+      </div>
+      <div class="news-actions">
+        <button class="action-btn" onclick="likeNews(this)"><i class="fa-regular fa-heart icon"></i> ${n.likes}</button>
+        <button class="action-btn"><i class="fa-regular fa-eye"></i> ${n.views}</button>
+        <button class="action-btn" style="margin-left:auto" onclick="shareNews()"><i class="fa-solid fa-share-nodes"></i></button>
+      </div>
+    </article>
+  `).join('');
+
+  function likeNews(btn) {
+    btn.classList.toggle('liked');
+    showToast('success','','已按讚！');
+  }
+
+  function shareNews() {
+    navigator.clipboard?.writeText(window.location.href);
+    showToast('info','已複製連結','分享給你的朋友吧！');
+  }
+
+  // ── Live stats simulation ────────────────────────────
+  function animateCount(el, target) {
+    let cur = Math.floor(target * 0.9);
+    const step = () => {
+      cur = Math.min(cur + Math.ceil((target - cur) * 0.08), target);
+      el.textContent = cur.toLocaleString();
+      if (cur < target) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  // Check auth state
+  const user = window.AI?.getUser();
+  if (user) {
+    document.getElementById('authButtons').classList.add('d-none');
+    document.getElementById('userMenu').classList.remove('d-none');
+    document.getElementById('notifWrap')?.classList.remove('d-none');
+    document.getElementById('navUsername').textContent = user.nickname;
+    document.getElementById('redeemArea').style.display = 'flex';
+    document.getElementById('redeemLocked')?.classList.add('d-none');
+  } else {
+    document.getElementById('redeemArea').style.display = 'none';
+    document.getElementById('redeemLocked')?.classList.remove('d-none');
+  }
+</script>
+</body>
+</html>

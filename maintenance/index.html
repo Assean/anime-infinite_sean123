@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>系統維護中 — Anime Infinite</title>
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:24px; overflow:hidden; }
+
+    .maint-wrap {
+      position: relative; z-index: 2;
+      text-align: center; max-width: 560px; width: 100%;
+    }
+
+    /* Rotating gear */
+    .gear-wrap {
+      display: flex; align-items: center; justify-content: center;
+      gap: 16px; font-size: 3rem; margin-bottom: 32px;
+    }
+    .gear-a { animation: gearRotateA 4s linear infinite; display: inline-block; }
+    .gear-b { animation: gearRotateB 3s linear infinite; display: inline-block; font-size: 2rem; }
+    @keyframes gearRotateA { to { transform: rotate(360deg); } }
+    @keyframes gearRotateB { to { transform: rotate(-360deg); } }
+
+    /* Progress bar */
+    .maint-progress-wrap {
+      background: var(--bg-elevated);
+      border-radius: 8px; height: 8px;
+      overflow: hidden; margin: 24px 0;
+    }
+    .maint-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
+      border-radius: 8px;
+      width: 0%;
+      animation: progressFill 60s linear infinite;
+      box-shadow: var(--glow-cyan);
+    }
+    @keyframes progressFill {
+      0%   { width: 0%; }
+      100% { width: 100%; }
+    }
+
+    /* Status items */
+    .status-list { display: flex; flex-direction: column; gap: 10px; margin: 24px 0; }
+    .status-item {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--bg-card); border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm); padding: 12px 16px;
+      font-family: var(--font-ui); font-size: 0.88rem;
+    }
+    .status-icon {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.9rem; flex-shrink: 0;
+    }
+    .status-done  { background: rgba(0,255,136,0.1);  color: var(--accent-green); }
+    .status-prog  { background: rgba(0,210,255,0.1);  color: var(--accent-cyan); }
+    .status-pend  { background: rgba(255,255,255,0.05); color: var(--text-muted); }
+
+    /* ETA countdown */
+    .eta-box {
+      background: var(--bg-panel); border: 1px solid var(--border-glow);
+      border-radius: var(--radius-md); padding: 20px;
+      margin-bottom: 24px;
+    }
+    .eta-time {
+      font-family: var(--font-display);
+      font-size: 2.5rem; font-weight: 900;
+      color: var(--accent-cyan); letter-spacing: 0.05em;
+      line-height: 1; margin: 8px 0;
+      text-shadow: var(--glow-cyan);
+    }
+
+    /* Background grid */
+    .maint-bg {
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 60% 60% at 50% -10%, rgba(255,45,85,0.08), transparent),
+        radial-gradient(ellipse 50% 50% at 50% 110%, rgba(0,210,255,0.06), transparent),
+        var(--bg-void);
+    }
+    .maint-grid {
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,210,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,210,255,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black, transparent);
+    }
+
+    /* Mini game teaser */
+    .minigame-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--bg-card); border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm); padding: 10px 20px;
+      font-family: var(--font-ui); font-size: 0.85rem; font-weight: 600;
+      color: var(--text-secondary); cursor: pointer; transition: all var(--transition);
+      text-decoration: none; margin: 4px;
+    }
+    .minigame-btn:hover { border-color: var(--border-glow); color: var(--text-primary); }
+  </style>
+</head>
+<body>
+<div class="maint-bg"></div>
+<div class="maint-grid"></div>
+
+<div class="maint-wrap">
+  <!-- Logo -->
+  <div style="margin-bottom:24px">
+    <div style="display:inline-flex;align-items:center;gap:10px;font-family:var(--font-display);font-size:1.3rem;font-weight:800;letter-spacing:0.08em">
+      <div style="width:36px;height:36px;background:linear-gradient(135deg,var(--accent-cyan),var(--accent-blue));border-radius:6px;display:flex;align-items:center;justify-content:center;box-shadow:var(--glow-cyan)">⚔️</div>
+      ANIME <span style="color:var(--accent-cyan)">∞</span>
+    </div>
+  </div>
+
+  <!-- Gears -->
+  <div class="gear-wrap">
+    <span class="gear-a">⚙️</span>
+    <span class="gear-b">⚙️</span>
+    <span class="gear-a" style="animation-delay:-1s">⚙️</span>
+  </div>
+
+  <h1 style="font-family:var(--font-display);font-size:1.8rem;font-weight:900;margin-bottom:8px" id="maintTitle">
+    🔧 系統維護中
+  </h1>
+  <p style="color:var(--text-secondary);font-size:0.95rem;line-height:1.8;margin-bottom:16px" id="maintMessage">
+    系統正在進行例行維護升級，以提供更穩定流暢的遊戲體驗。<br>感謝您的耐心等候！
+  </p>
+
+  <!-- ETA Countdown -->
+  <div class="eta-box" id="etaBox" style="display:none">
+    <div style="font-family:var(--font-ui);font-size:0.75rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted)">預計完成時間</div>
+    <div class="eta-time" id="etaCountdown">--:--:--</div>
+    <div style="font-size:0.8rem;color:var(--text-muted)" id="etaLabel">剩餘時間</div>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="maint-progress-wrap">
+    <div class="maint-progress-bar"></div>
+  </div>
+
+  <!-- Status checklist -->
+  <div class="status-list">
+    <div class="status-item">
+      <div class="status-icon status-done"><i class="fa-solid fa-check"></i></div>
+      <span>資料庫備份完成</span>
+      <span style="margin-left:auto;color:var(--accent-green);font-size:0.78rem">✓ 完成</span>
+    </div>
+    <div class="status-item">
+      <div class="status-icon status-prog"><i class="fa-solid fa-spinner fa-spin"></i></div>
+      <span>系統核心升級中</span>
+      <span style="margin-left:auto;color:var(--accent-cyan);font-size:0.78rem">進行中...</span>
+    </div>
+    <div class="status-item">
+      <div class="status-icon status-pend"><i class="fa-solid fa-clock"></i></div>
+      <span>伺服器重啟驗證</span>
+      <span style="margin-left:auto;color:var(--text-muted);font-size:0.78rem">待處理</span>
+    </div>
+    <div class="status-item">
+      <div class="status-icon status-pend"><i class="fa-solid fa-clock"></i></div>
+      <span>服務恢復上線</span>
+      <span style="margin-left:auto;color:var(--text-muted);font-size:0.78rem">待處理</span>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div style="margin-top:24px">
+    <p style="color:var(--text-muted);font-size:0.82rem;margin-bottom:12px">在等待期間，您可以：</p>
+    <div>
+      <a href="https://discord.gg/anime-infinite" target="_blank" class="minigame-btn">
+        <i class="fa-brands fa-discord" style="color:#7289da"></i> 加入 Discord 社群
+      </a>
+      <a href="#" onclick="startMiniGame()" class="minigame-btn">
+        <i class="fa-solid fa-gamepad" style="color:var(--accent-cyan)"></i> 小遊戲消磨時間
+      </a>
+    </div>
+  </div>
+
+  <!-- Auto-refresh notice -->
+  <div style="margin-top:28px;font-size:0.78rem;color:var(--text-muted)">
+    頁面將於 <span id="refreshCountdown" style="font-family:monospace;color:var(--accent-cyan)">60</span> 秒後自動重新整理
+    <br><br>
+    如有緊急問題，請聯絡客服：<a href="mailto:support@anime-infinite.com" style="color:var(--accent-cyan)">support@anime-infinite.com</a>
+  </div>
+</div>
+
+<!-- Mini Game Modal -->
+<div class="modal-overlay" id="miniGameModal" onclick="this.classList.remove('open')" style="z-index:9999">
+  <div class="modal" style="max-width:420px" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">🎮 猜數字小遊戲</div>
+      <button class="modal-close" onclick="document.getElementById('miniGameModal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body" style="text-align:center">
+      <p style="color:var(--text-secondary);margin-bottom:16px">我想了一個 1 ~ 100 的數字，猜猜看？</p>
+      <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:800;margin-bottom:16px" id="mgResult">—</div>
+      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px">
+        <input type="number" class="form-control" id="mgInput" min="1" max="100"
+          style="max-width:120px;text-align:center;font-size:1.1rem"
+          placeholder="1 ~ 100"
+          onkeydown="if(event.key==='Enter')guessNumber()">
+        <button class="btn btn-primary" onclick="guessNumber()">猜！</button>
+      </div>
+      <div style="font-size:0.82rem;color:var(--text-muted)">嘗試次數：<span id="mgAttempts" style="color:var(--accent-gold);font-weight:700">0</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Fetch maintenance data ────────────────────────────────
+  fetch('../api/admin.php?action=get_maintenance')
+    .then(r => r.json())
+    .then(d => {
+      if (!d.success || !d.data) return;
+      const { title, message, eta } = d.data;
+      if (title)   document.getElementById('maintTitle').textContent   = title;
+      if (message) document.getElementById('maintMessage').textContent = message;
+      if (eta)     startETACountdown(eta);
+    })
+    .catch(() => {});
+
+  // ── ETA Countdown ─────────────────────────────────────────
+  function startETACountdown(etaStr) {
+    const etaBox = document.getElementById('etaBox');
+    const etaEl  = document.getElementById('etaCountdown');
+    const end    = new Date(etaStr).getTime();
+    if (isNaN(end)) return;
+    etaBox.style.display = 'block';
+
+    const tick = () => {
+      const diff = end - Date.now();
+      if (diff <= 0) {
+        etaEl.textContent = '即將完成...';
+        return;
+      }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      etaEl.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      setTimeout(tick, 1000);
+    };
+    tick();
+  }
+
+  // ── Auto-refresh ──────────────────────────────────────────
+  let refreshSec = 60;
+  const refreshEl = document.getElementById('refreshCountdown');
+  const refreshTimer = setInterval(() => {
+    refreshSec--;
+    if (refreshEl) refreshEl.textContent = refreshSec;
+    if (refreshSec <= 0) {
+      clearInterval(refreshTimer);
+      // Check if site is back online
+      fetch('../api/auth.php?action=ping')
+        .then(r => { if (r.ok) window.location.href = '../index.html'; })
+        .catch(() => { refreshSec = 60; });
+    }
+  }, 1000);
+
+  // ── Mini Game ─────────────────────────────────────────────
+  let mgSecret   = Math.floor(Math.random() * 100) + 1;
+  let mgAttempts = 0;
+
+  function startMiniGame() {
+    mgSecret   = Math.floor(Math.random() * 100) + 1;
+    mgAttempts = 0;
+    document.getElementById('mgResult').textContent = '—';
+    document.getElementById('mgAttempts').textContent = '0';
+    document.getElementById('mgInput').value = '';
+    document.getElementById('miniGameModal').classList.add('open');
+  }
+
+  function guessNumber() {
+    const val = parseInt(document.getElementById('mgInput').value);
+    if (!val || val < 1 || val > 100) {
+      document.getElementById('mgResult').textContent = '請輸入 1 ~ 100 的數字';
+      return;
+    }
+    mgAttempts++;
+    document.getElementById('mgAttempts').textContent = mgAttempts;
+
+    if (val === mgSecret) {
+      document.getElementById('mgResult').innerHTML =
+        `<span style="color:var(--accent-green)">🎉 答對了！答案是 ${mgSecret}，您猜了 ${mgAttempts} 次！</span>`;
+      setTimeout(() => {
+        mgSecret   = Math.floor(Math.random() * 100) + 1;
+        mgAttempts = 0;
+        document.getElementById('mgInput').value = '';
+        document.getElementById('mgResult').textContent = '再來一局！';
+      }, 2000);
+    } else {
+      const hint = val < mgSecret ? '太小了 📉' : '太大了 📈';
+      document.getElementById('mgResult').innerHTML =
+        `<span style="color:var(--accent-gold)">${hint}</span>`;
+    }
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理員登入 — Anime Infinite</title>
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:24px; }
+    .admin-login-bg {
+      position:fixed; inset:0;
+      background:
+        radial-gradient(ellipse 50% 60% at 50% -10%, rgba(255,45,85,0.12), transparent),
+        radial-gradient(ellipse 80% 50% at 50% 110%, rgba(255,45,85,0.06), transparent),
+        var(--bg-void);
+    }
+    .login-box {
+      position:relative; z-index:2;
+      width:100%; max-width:400px;
+      background:var(--bg-panel);
+      border:1px solid rgba(255,45,85,0.3);
+      border-radius:var(--radius-lg);
+      box-shadow:0 40px 100px rgba(0,0,0,0.6), 0 0 80px rgba(255,45,85,0.08);
+      overflow:hidden;
+    }
+    .login-header {
+      padding:28px 32px 24px;
+      background:linear-gradient(180deg,rgba(255,45,85,0.06),transparent);
+      border-bottom:1px solid rgba(255,45,85,0.15);
+      text-align:center;
+    }
+    .login-body { padding:28px 32px 32px; }
+    .layer-dot {
+      width:10px; height:10px; border-radius:50%;
+      background:var(--border-dim); display:inline-block;
+      transition:all var(--transition);
+    }
+    .layer-dot.active { background:var(--accent-crimson); box-shadow:0 0 10px var(--accent-crimson); }
+    .layer-dot.done   { background:var(--accent-green);   box-shadow:0 0 10px var(--accent-green); }
+    .layer-step { display:none; animation:fadeIn 0.3s ease; }
+    .layer-step.active { display:block; }
+    .security-notice {
+      background:rgba(255,45,85,0.06); border:1px solid rgba(255,45,85,0.2);
+      border-radius:var(--radius-sm); padding:12px 14px;
+      font-size:0.8rem; color:var(--text-secondary); line-height:1.7;
+      margin-bottom:20px;
+    }
+  </style>
+</head>
+<body>
+<div class="toast-container" id="toastContainer"></div>
+<div class="admin-login-bg"></div>
+
+<div class="login-box" style="position:relative">
+  <div style="position:absolute;inset:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,45,85,0.012) 2px,rgba(255,45,85,0.012) 4px)"></div>
+
+  <div class="login-header">
+    <div style="font-size:2rem;margin-bottom:8px">🛡️</div>
+    <div style="font-family:var(--font-display);font-size:1.2rem;font-weight:800;color:var(--accent-crimson);letter-spacing:0.08em">ADMIN ACCESS</div>
+    <div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;font-family:var(--font-ui);letter-spacing:0.06em">ANIME INFINITE 管理後台</div>
+    <!-- 3-layer dots -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px">
+      <div class="layer-dot active" id="dot1"></div>
+      <div style="height:1px;width:24px;background:var(--border-dim)"></div>
+      <div class="layer-dot" id="dot2"></div>
+      <div style="height:1px;width:24px;background:var(--border-dim)"></div>
+      <div class="layer-dot" id="dot3"></div>
+    </div>
+    <div style="font-size:0.7rem;color:var(--text-muted);margin-top:8px;letter-spacing:0.1em;text-transform:uppercase" id="layerLabel">第一層 — 帳號驗證</div>
+  </div>
+
+  <div class="login-body" style="position:relative;z-index:1">
+
+    <!-- Layer 1: Username + Password -->
+    <div class="layer-step active" id="layer1">
+      <div class="security-notice">
+        <i class="fa-solid fa-lock" style="color:var(--accent-crimson);margin-right:6px"></i>
+        此頁面為管理員專屬入口。未授權的存取嘗試將被記錄。
+      </div>
+      <div class="form-group">
+        <label class="form-label">管理員帳號</label>
+        <div class="input-group">
+          <i class="fa-solid fa-user-shield input-icon"></i>
+          <input type="text" class="form-control" id="adminEmail" placeholder="user@anime-infinite-corp.com">
+        </div>
+        <div class="form-hint">使用 @anime-infinite-corp.com 網域快速驗證</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">登入密碼</label>
+        <div class="input-group">
+          <i class="fa-solid fa-lock input-icon"></i>
+          <input type="password" class="form-control" id="adminPwd" placeholder="••••••••"
+            onkeydown="if(event.key==='Enter')nextLayer(1)">
+          <button class="input-action" onclick="togglePwd('adminPwd')"><i class="fa-regular fa-eye" id="adminPwdEye"></i></button>
+        </div>
+      </div>
+      <button class="btn btn-danger w-full" onclick="nextLayer(1)">
+        <i class="fa-solid fa-arrow-right"></i> 繼續
+      </button>
+    </div>
+
+    <!-- Layer 2: Admin verify password -->
+    <div class="layer-step" id="layer2">
+      <div class="security-notice">
+        <i class="fa-solid fa-shield-halved" style="color:var(--accent-gold);margin-right:6px"></i>
+        請輸入管理員驗證密碼（第二道防護）。
+      </div>
+      <div class="form-group">
+        <label class="form-label">管理員驗證密碼</label>
+        <div class="input-group">
+          <i class="fa-solid fa-key input-icon"></i>
+          <input type="password" class="form-control" id="adminVerifyPwd" placeholder="管理員專屬驗證碼"
+            onkeydown="if(event.key==='Enter')nextLayer(2)">
+          <button class="input-action" onclick="togglePwd('adminVerifyPwd')"><i class="fa-regular fa-eye" id="adminVerifyPwdEye"></i></button>
+        </div>
+      </div>
+      <button class="btn btn-danger w-full" onclick="nextLayer(2)">
+        <i class="fa-solid fa-arrow-right"></i> 繼續
+      </button>
+      <button class="btn btn-ghost w-full" style="margin-top:8px" onclick="backLayer(2)">返回</button>
+    </div>
+
+    <!-- Layer 3: Safety code (Super Admin only) -->
+    <div class="layer-step" id="layer3">
+      <div class="security-notice">
+        <i class="fa-solid fa-crown" style="color:var(--accent-gold);margin-right:6px"></i>
+        此帳號為管理層成員，需要輸入由總管理員核發的帳戶安全碼。
+      </div>
+      <div class="form-group">
+        <label class="form-label">帳戶安全碼</label>
+        <div class="input-group">
+          <i class="fa-solid fa-fingerprint input-icon"></i>
+          <input type="text" class="form-control" id="safetyCode"
+            style="font-family:monospace;letter-spacing:0.15em;text-transform:uppercase"
+            placeholder="XXXX-XXXX-XXXX"
+            onkeydown="if(event.key==='Enter')doAdminLogin()">
+        </div>
+        <div class="form-hint">安全碼由總管理員透過站內通知核發</div>
+      </div>
+      <button class="btn btn-danger w-full" onclick="doAdminLogin()" id="loginFinalBtn">
+        <i class="fa-solid fa-right-to-bracket"></i> 進入後台
+      </button>
+      <button class="btn btn-ghost w-full" style="margin-top:8px" onclick="backLayer(3)">返回</button>
+    </div>
+
+  </div>
+</div>
+
+<div style="position:relative;z-index:2;text-align:center;margin-top:20px">
+  <a href="../index.html" style="color:var(--text-muted);font-size:0.82rem">
+    <i class="fa-solid fa-arrow-left" style="margin-right:6px"></i>返回首頁
+  </a>
+</div>
+
+<script src="../assets/js/main.js"></script>
+<script>
+  if (AI.isLoggedIn() && AI.isAdmin()) window.location.href = 'index.html';
+
+  let currentLayer = 1;
+  const layerLabels = { 1:'第一層 — 帳號驗證', 2:'第二層 — 管理員驗證', 3:'第三層 — 安全碼驗證' };
+
+  function nextLayer(from) {
+    if (from === 1) {
+      const email = document.getElementById('adminEmail').value.trim();
+      const pwd   = document.getElementById('adminPwd').value;
+      if (!email || !pwd) { showToast('error','請填寫所有欄位'); return; }
+    }
+    if (from === 2) {
+      const vp = document.getElementById('adminVerifyPwd').value;
+      if (!vp) { showToast('error','請輸入管理員驗證密碼'); return; }
+    }
+
+    document.getElementById(`layer${from}`).classList.remove('active');
+    document.getElementById(`dot${from}`).classList.remove('active');
+    document.getElementById(`dot${from}`).classList.add('done');
+
+    // For lower-level admins, skip layer 3
+    const skipLayer3 = from === 2 && false; // set to true for non-super-admin
+    const next = skipLayer3 ? null : from + 1;
+
+    if (next && next <= 3) {
+      document.getElementById(`layer${next}`).classList.add('active');
+      document.getElementById(`dot${next}`).classList.add('active');
+      document.getElementById('layerLabel').textContent = layerLabels[next];
+      currentLayer = next;
+    } else if (from === 2) {
+      // Skip layer 3 → direct login
+      doAdminLogin(true);
+    }
+  }
+
+  function backLayer(from) {
+    document.getElementById(`layer${from}`).classList.remove('active');
+    document.getElementById(`dot${from - 1}`).classList.remove('done');
+    document.getElementById(`dot${from - 1}`).classList.add('active');
+    document.getElementById(`dot${from}`).classList.remove('active');
+    document.getElementById(`layer${from - 1}`).classList.add('active');
+    document.getElementById('layerLabel').textContent = layerLabels[from - 1];
+    currentLayer = from - 1;
+  }
+
+  async function doAdminLogin(skipSafety = false) {
+    const btn = document.getElementById('loginFinalBtn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 驗證中'; }
+
+    const payload = {
+      action:      'admin_login',
+      email:       document.getElementById('adminEmail').value.trim(),
+      password:    document.getElementById('adminPwd').value,
+      verify_pwd:  document.getElementById('adminVerifyPwd').value,
+      safety_code: skipSafety ? '' : document.getElementById('safetyCode')?.value?.trim(),
+    };
+
+    const data = await apiFetch('../api/auth.php', { method:'POST', body: JSON.stringify(payload) });
+
+    if (data.success) {
+      AI.setSession(data.token, data.user);
+      showToast('success', `歡迎，${data.user.nickname}`, '進入管理後台...');
+      setTimeout(() => window.location.href = 'index.html', 800);
+    } else {
+      showToast('error', '驗證失敗', data.message || '帳號或密碼錯誤');
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> 進入後台'; }
+    }
+  }
+
+  function togglePwd(id) {
+    const f = document.getElementById(id);
+    const e = document.getElementById(id + 'Eye');
+    f.type = f.type === 'password' ? 'text' : 'password';
+    e.className = f.type === 'password' ? 'fa-regular fa-eye' : 'fa-regular fa-eye-slash';
+  }
+</script>
+</body>
+</html>

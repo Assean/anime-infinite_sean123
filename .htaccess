@@ -1,0 +1,169 @@
+# ============================================================
+# ANIME INFINITE — Apache .htaccess
+# URL Rewriting · Security · Maintenance · API Routing
+# ============================================================
+
+Options -Indexes -MultiViews
+ServerSignature Off
+
+# ── Engine ────────────────────────────────────────────────────
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # ── Maintenance Mode ──────────────────────────────────────
+    # Redirect all non-admin, non-asset traffic to maintenance page
+    # when .maintenance file exists
+    RewriteCond %{DOCUMENT_ROOT}/.maintenance -f
+    RewriteCond %{REQUEST_URI} !^/maintenance/
+    RewriteCond %{REQUEST_URI} !^/assets/
+    RewriteCond %{REQUEST_URI} !^/api/auth\.php
+    RewriteCond %{HTTP_COOKIE}  !ai_token=[a-zA-Z0-9._-]+ [NC]
+    RewriteRule ^(.*)$ /maintenance/index.html [R=302,L]
+
+    # ── Remove trailing slash (except root) ───────────────────
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} ^/(.+)/$
+    RewriteRule ^(.+)/$ /$1 [R=301,L]
+
+    # ── Force HTTPS (enable in production) ───────────────────
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+    # ── Clean URL routing ─────────────────────────────────────
+    # /dashboard → /dashboard/index.html
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^dashboard$ /dashboard/index.html [L]
+
+    # /admin → /admin/index.html
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^admin$ /admin/index.html [L]
+
+    # /admin/login → /admin/login.html
+    RewriteRule ^admin/login$ /admin/login.html [L]
+
+    # ── API routing ───────────────────────────────────────────
+    # /api/auth     → /api/auth.php
+    # /api/user     → /api/user.php
+    # /api/store    → /api/store.php
+    # /api/redeem   → /api/redeem.php
+    # /api/admin    → /api/admin.php
+    RewriteRule ^api/([a-z_]+)$ /api/$1.php [L,QSA]
+
+    # ── Block direct PHP access (only through clean URLs) ─────
+    # (optional — comment out if causing issues during dev)
+    # RewriteRule ^api/.*\.php$ - [F,L]
+</IfModule>
+
+# ── PHP Settings ──────────────────────────────────────────────
+<IfModule mod_php.c>
+    php_flag  display_errors      Off
+    php_flag  log_errors          On
+    php_value error_log           /var/log/anime-infinite/php_errors.log
+    php_value upload_max_filesize 5M
+    php_value post_max_size       6M
+    php_value max_execution_time  30
+    php_value memory_limit        128M
+    php_value session.cookie_httponly 1
+    php_value session.cookie_samesite Strict
+    # php_value session.cookie_secure   1  # enable on HTTPS
+</IfModule>
+
+# ── Security Headers ──────────────────────────────────────────
+<IfModule mod_headers.c>
+    # Prevent MIME sniffing
+    Header always set X-Content-Type-Options "nosniff"
+
+    # Clickjacking protection
+    Header always set X-Frame-Options "DENY"
+
+    # XSS protection (legacy browsers)
+    Header always set X-XSS-Protection "1; mode=block"
+
+    # Referrer policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Permissions policy
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+
+    # Content Security Policy
+    Header always set Content-Security-Policy "\
+        default-src 'self'; \
+        script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; \
+        style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://fonts.gstatic.com; \
+        font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; \
+        img-src 'self' data: https: blob:; \
+        connect-src 'self' https://apis.roblox.com https://discord.com; \
+        frame-ancestors 'none';"
+
+    # HSTS (enable after SSL is confirmed)
+    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+    # Remove server info
+    Header always unset X-Powered-By
+    Header always unset Server
+</IfModule>
+
+# ── Compression ───────────────────────────────────────────────
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css text/javascript
+    AddOutputFilterByType DEFLATE application/javascript application/json
+    AddOutputFilterByType DEFLATE image/svg+xml text/xml
+</IfModule>
+
+# ── Browser Caching ───────────────────────────────────────────
+<IfModule mod_expires.c>
+    ExpiresActive On
+    # CSS & JS: 7 days
+    ExpiresByType text/css                  "access plus 7 days"
+    ExpiresByType application/javascript    "access plus 7 days"
+    ExpiresByType text/javascript           "access plus 7 days"
+    # Fonts: 1 year
+    ExpiresByType font/woff2                "access plus 1 year"
+    ExpiresByType font/woff                 "access plus 1 year"
+    # Images: 30 days
+    ExpiresByType image/png                 "access plus 30 days"
+    ExpiresByType image/jpeg                "access plus 30 days"
+    ExpiresByType image/webp                "access plus 30 days"
+    ExpiresByType image/svg+xml             "access plus 30 days"
+    ExpiresByType image/gif                 "access plus 30 days"
+    # HTML: no cache
+    ExpiresByType text/html                 "access plus 0 seconds"
+    # JSON API: no cache
+    ExpiresByType application/json          "access plus 0 seconds"
+</IfModule>
+
+# ── Block sensitive files ─────────────────────────────────────
+<FilesMatch "(\.env|\.maintenance|\.git|composer\.json|composer\.lock|package\.json|package-lock\.json)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# ── Block config directory ────────────────────────────────────
+<IfModule mod_rewrite.c>
+    RewriteRule ^config/.*$ - [F,L]
+    RewriteRule ^database/.*$ - [F,L]
+</IfModule>
+
+# ── Block bad bots / scanners ─────────────────────────────────
+<IfModule mod_rewrite.c>
+    RewriteCond %{HTTP_USER_AGENT} (nikto|sqlmap|nmap|masscan|zgrab|curl/7\.[0-3]) [NC]
+    RewriteRule .* - [F,L]
+</IfModule>
+
+# ── Rate limit uploads (per-directory) ───────────────────────
+<IfModule mod_ratelimit.c>
+    <Location /api/>
+        SetOutputFilter RATE_LIMIT
+        SetEnv rate-limit 400
+    </Location>
+</IfModule>
+
+# ── Custom error pages ────────────────────────────────────────
+ErrorDocument 400 /maintenance/index.html
+ErrorDocument 403 /maintenance/index.html
+ErrorDocument 404 /index.html
+ErrorDocument 500 /maintenance/index.html
+ErrorDocument 503 /maintenance/index.html

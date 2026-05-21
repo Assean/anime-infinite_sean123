@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>最新資訊 — Anime Infinite</title>
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    .news-hero {
+      padding: calc(var(--navbar-h) + 48px) 0 48px;
+      position: relative; overflow: hidden;
+    }
+    .news-hero::before {
+      content:''; position:absolute; inset:0;
+      background:
+        radial-gradient(ellipse 50% 60% at 0% 50%, rgba(0,210,255,0.06), transparent),
+        radial-gradient(ellipse 40% 50% at 100% 50%, rgba(58,123,255,0.05), transparent);
+    }
+
+    .cat-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:28px; }
+    .cat-tab {
+      padding:7px 16px; border-radius:100px;
+      font-family:var(--font-ui); font-size:0.8rem; font-weight:600;
+      letter-spacing:0.06em; text-transform:uppercase;
+      background:var(--bg-card); border:1px solid var(--border-dim);
+      color:var(--text-muted); cursor:pointer; transition:all var(--transition);
+    }
+    .cat-tab:hover { border-color:var(--border-glow); color:var(--text-primary); }
+    .cat-tab.active { background:rgba(0,210,255,0.1); border-color:rgba(0,210,255,0.4); color:var(--accent-cyan); }
+
+    /* Featured article */
+    .featured-card {
+      background:var(--bg-card); border:1px solid var(--border-dim);
+      border-radius:var(--radius-lg); overflow:hidden;
+      display:grid; grid-template-columns:1fr 1.2fr;
+      margin-bottom:32px; transition:all var(--transition);
+    }
+    .featured-card:hover { border-color:var(--border-glow); transform:translateY(-3px); box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+    .featured-img {
+      height:280px; display:flex; align-items:center; justify-content:center;
+      font-size:5rem; background:linear-gradient(135deg,var(--bg-elevated),var(--bg-panel));
+      position:relative; overflow:hidden;
+    }
+    .featured-img::before {
+      content:''; position:absolute; inset:0;
+      background:linear-gradient(135deg,rgba(0,210,255,0.08),rgba(58,123,255,0.06));
+    }
+    .featured-tag {
+      position:absolute; top:14px; left:14px;
+      background:var(--accent-crimson);
+      color:#fff; font-family:var(--font-ui); font-size:0.7rem;
+      font-weight:800; letter-spacing:0.1em; padding:4px 10px;
+      border-radius:4px; text-transform:uppercase; z-index:1;
+    }
+    .featured-body { padding:28px; display:flex; flex-direction:column; justify-content:center; }
+
+    /* Article list */
+    .article-list { display:flex; flex-direction:column; gap:14px; }
+    .article-item {
+      background:var(--bg-card); border:1px solid var(--border-dim);
+      border-radius:var(--radius-md); display:flex; align-items:center;
+      gap:16px; padding:16px 20px; cursor:pointer;
+      transition:all var(--transition); text-decoration:none;
+    }
+    .article-item:hover { border-color:var(--border-glow); transform:translateX(4px); }
+    .article-item-emoji { font-size:1.8rem; flex-shrink:0; width:48px; text-align:center; }
+    .article-item-body  { flex:1; min-width:0; }
+    .article-item-title { font-family:var(--font-ui); font-size:0.93rem; font-weight:700; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .article-item-meta  { font-size:0.75rem; color:var(--text-muted); display:flex; gap:10px; }
+
+    /* Sidebar */
+    .news-sidebar { display:flex; flex-direction:column; gap:16px; }
+    .sidebar-widget { background:var(--bg-panel); border:1px solid var(--border-dim); border-radius:var(--radius-md); padding:18px; }
+    .sidebar-widget-title { font-family:var(--font-ui); font-size:0.72rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-muted); margin-bottom:14px; }
+
+    /* Comment */
+    .comment-item {
+      padding:12px 0; border-bottom:1px solid var(--border-dim);
+    }
+    .comment-item:last-child { border-bottom:none; }
+    .comment-header { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+    .comment-avatar { width:28px; height:28px; border-radius:50%; background:var(--bg-elevated); display:flex; align-items:center; justify-content:center; font-size:0.85rem; flex-shrink:0; }
+    .comment-name   { font-family:var(--font-ui); font-size:0.82rem; font-weight:700; }
+    .comment-time   { font-size:0.72rem; color:var(--text-muted); margin-left:auto; }
+    .comment-text   { font-size:0.83rem; color:var(--text-secondary); line-height:1.7; }
+
+    /* Creator dashboard */
+    .creator-panel {
+      background:linear-gradient(135deg,rgba(0,210,255,0.06),rgba(58,123,255,0.04));
+      border:1px solid rgba(0,210,255,0.2); border-radius:var(--radius-md);
+      padding:20px; margin-bottom:24px;
+    }
+    .creator-stat {
+      text-align:center;
+    }
+    .creator-stat-val { font-family:var(--font-display); font-size:1.4rem; font-weight:800; line-height:1; }
+    .creator-stat-label { font-size:0.72rem; color:var(--text-muted); font-family:var(--font-ui); letter-spacing:0.08em; text-transform:uppercase; margin-top:4px; }
+
+    /* Article detail modal */
+    .article-modal-body { font-size:0.93rem; color:var(--text-secondary); line-height:2; }
+    .article-modal-body p { margin-bottom:16px; }
+    .article-modal-body h3 { font-family:var(--font-display); font-size:1.1rem; font-weight:700; color:var(--text-primary); margin:20px 0 10px; }
+
+    @media(max-width:768px) {
+      .featured-card { grid-template-columns:1fr; }
+      .featured-img  { height:160px; }
+      .news-layout   { grid-template-columns:1fr !important; }
+    }
+  </style>
+</head>
+<body>
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ══ Navbar ════════════════════════════════════════════════ -->
+<nav id="navbar">
+  <div class="container">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-logo">
+        <div class="logo-icon">⚔️</div>
+        <div class="logo-text">ANIME <span>∞</span></div>
+      </a>
+      <div class="navbar-nav">
+        <a href="index.html"  class="nav-link">首頁</a>
+        <a href="news.html"   class="nav-link active">最新資訊</a>
+        <a href="store.html"  class="nav-link">儲值商城</a>
+        <a href="dashboard/index.html" class="nav-link">會員中心</a>
+      </div>
+      <div class="navbar-actions">
+        <div id="authButtons">
+          <a href="auth.html" class="btn btn-outline btn-sm">登入</a>
+          <a href="auth.html?mode=register" class="btn btn-primary btn-sm">免費加入</a>
+        </div>
+        <div id="userMenu" class="d-none d-flex gap-8">
+          <a href="dashboard/index.html" class="btn btn-ghost btn-sm"><i class="fa-solid fa-user"></i></a>
+        </div>
+        <button class="navbar-toggle" onclick="toggleMobileNav()"><i class="fa-solid fa-bars"></i></button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ══ Hero ══════════════════════════════════════════════════ -->
+<div class="news-hero">
+  <div class="container" style="position:relative;z-index:1">
+    <div class="badge badge-cyan" style="margin-bottom:12px;display:inline-flex">
+      <i class="fa-solid fa-newspaper"></i>&nbsp; 最新資訊
+    </div>
+    <h1 class="section-title" style="font-size:2rem;margin-bottom:10px">資訊佈告欄</h1>
+    <p style="color:var(--text-secondary);font-size:0.93rem;max-width:440px">
+      最新遊戲更新、活動公告、玩家攻略，盡在 Anime Infinite 社群。
+    </p>
+  </div>
+</div>
+
+<!-- ══ Main Content ══════════════════════════════════════════ -->
+<div class="section" style="padding-top:0">
+  <div class="container">
+
+    <!-- Creator Dashboard (贡献层以上可见) -->
+    <div class="creator-panel" id="creatorPanel" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="font-family:var(--font-display);font-size:1rem;font-weight:800;color:var(--accent-cyan);margin-bottom:2px">📊 創作者數據面板</div>
+          <div style="font-size:0.78rem;color:var(--text-muted)">您的文章統計（過去 30 天）</div>
+        </div>
+        <a href="#" class="btn btn-primary btn-sm" onclick="openModal('newArticleModal')">
+          <i class="fa-solid fa-pen-to-square"></i> 發表文章
+        </a>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px">
+        <div class="creator-stat">
+          <div class="creator-stat-val text-cyan" id="creatorViews">24.8K</div>
+          <div class="creator-stat-label">總觀看次數</div>
+        </div>
+        <div class="creator-stat">
+          <div class="creator-stat-val text-crimson" id="creatorLikes">1,240</div>
+          <div class="creator-stat-label">總按讚數</div>
+        </div>
+        <div class="creator-stat">
+          <div class="creator-stat-val text-gold" id="creatorShares">382</div>
+          <div class="creator-stat-label">轉發次數</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category tabs -->
+    <div class="cat-tabs">
+      <button class="cat-tab active" onclick="filterNews('all',this)">全部</button>
+      <button class="cat-tab" onclick="filterNews('update',this)">🔧 遊戲更新</button>
+      <button class="cat-tab" onclick="filterNews('event',this)">🎉 活動公告</button>
+      <button class="cat-tab" onclick="filterNews('guide',this)">📖 攻略分享</button>
+      <button class="cat-tab" onclick="filterNews('patch',this)">⚡ 更新爆料</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start" class="news-layout">
+
+      <!-- Main articles -->
+      <div>
+        <!-- Featured -->
+        <div class="featured-card" id="featuredCard">
+          <div class="featured-img">
+            <div class="featured-tag">FEATURED</div>
+            <span style="position:relative;z-index:1">⚔️</span>
+          </div>
+          <div class="featured-body">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+              <span class="badge badge-crimson">遊戲更新</span>
+              <span class="badge badge-dim"><i class="fa-regular fa-clock"></i> 2024-01-15</span>
+            </div>
+            <h2 style="font-family:var(--font-display);font-size:1.3rem;font-weight:800;line-height:1.4;margin-bottom:10px">
+              第三賽季「暗影領域」正式開啟 — 全新戰鬥系統完整解說
+            </h2>
+            <p style="color:var(--text-secondary);font-size:0.88rem;line-height:1.7;margin-bottom:16px">
+              全新暗影系技能樹、5 名全新角色強勢登場，以及革命性的「連鎖戰鬥」機制改版詳解。本賽季獎池更豐富，限定稱號等你挑戰！
+            </p>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+              <button class="btn btn-primary btn-sm" onclick="openArticle(1)">
+                <i class="fa-solid fa-book-open"></i> 閱讀全文
+              </button>
+              <div style="display:flex;gap:8px;margin-left:auto">
+                <button class="action-btn" onclick="likeArticle(this,1)"><i class="fa-regular fa-heart icon"></i> 341</button>
+                <button class="action-btn" onclick="shareArticle(1)"><i class="fa-solid fa-share-nodes"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Article list -->
+        <div class="article-list" id="articleList">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Load more -->
+        <div style="text-align:center;margin-top:24px">
+          <button class="btn btn-outline" id="loadMoreBtn" onclick="loadMore()">
+            <i class="fa-solid fa-rotate-right"></i> 載入更多
+          </button>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="news-sidebar">
+
+        <!-- Search -->
+        <div class="sidebar-widget">
+          <div class="sidebar-widget-title">搜尋文章</div>
+          <div class="input-group">
+            <i class="fa-solid fa-magnifying-glass input-icon"></i>
+            <input type="text" class="form-control" id="newsSearch" placeholder="搜尋標題..." oninput="searchNews()">
+          </div>
+        </div>
+
+        <!-- Hot articles -->
+        <div class="sidebar-widget">
+          <div class="sidebar-widget-title">🔥 熱門文章</div>
+          <div id="hotArticles"></div>
+        </div>
+
+        <!-- Discord CTA -->
+        <div class="sidebar-widget" style="background:linear-gradient(135deg,rgba(88,101,242,0.1),rgba(88,101,242,0.05));border-color:rgba(88,101,242,0.3)">
+          <div style="text-align:center">
+            <div style="font-size:2rem;margin-bottom:8px">💬</div>
+            <div style="font-family:var(--font-display);font-weight:800;margin-bottom:4px">加入 Discord</div>
+            <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:14px">與玩家即時交流、參與限定活動</div>
+            <a href="https://discord.gg/anime-infinite" target="_blank" class="btn btn-sm w-full"
+              style="background:rgba(88,101,242,0.8);color:#fff;border:none">
+              <i class="fa-brands fa-discord"></i> 立即加入
+            </a>
+          </div>
+        </div>
+
+        <!-- Tags -->
+        <div class="sidebar-widget">
+          <div class="sidebar-widget-title">標籤雲</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px" id="tagCloud"></div>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══ Article Modal ══════════════════════════════════════════ -->
+<div class="modal-overlay" id="articleModal" onclick="closeOnOverlay(event,'articleModal')">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <div>
+        <div id="modalArticleCat" style="font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent-cyan);margin-bottom:4px"></div>
+        <div class="modal-title" id="modalArticleTitle"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('articleModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border-dim)">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--bg-elevated);display:flex;align-items:center;justify-content:center">🧙</div>
+        <div>
+          <div style="font-family:var(--font-ui);font-size:0.83rem;font-weight:700" id="modalArticleAuthor"></div>
+          <div style="font-size:0.72rem;color:var(--text-muted)" id="modalArticleDate"></div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <span class="badge badge-dim" id="modalViews"></span>
+        </div>
+      </div>
+      <div class="article-modal-body" id="modalArticleBody"></div>
+    </div>
+    <div class="modal-footer">
+      <!-- Comments section -->
+      <div style="font-family:var(--font-ui);font-size:0.78rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px">
+        留言 <span id="commentCount">(3)</span>
+      </div>
+      <div id="commentList" style="max-height:200px;overflow-y:auto;margin-bottom:14px"></div>
+      <div id="commentInput">
+        <div class="input-group">
+          <i class="fa-solid fa-comment input-icon"></i>
+          <input type="text" class="form-control" id="commentText" placeholder="發表留言...（需登入）"
+            onkeydown="if(event.key==='Enter')submitComment()">
+          <button class="input-action" onclick="submitComment()"><i class="fa-solid fa-paper-plane" style="color:var(--accent-cyan)"></i></button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="action-btn" id="modalLikeBtn" onclick="likeArticle(this,currentArticleId)">
+          <i class="fa-regular fa-heart icon"></i> <span id="modalLikeCount">0</span>
+        </button>
+        <button class="action-btn" onclick="shareArticle(currentArticleId)">
+          <i class="fa-solid fa-share-nodes"></i> 分享
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New Article Modal -->
+<div class="modal-overlay" id="newArticleModal" onclick="closeOnOverlay(event,'newArticleModal')">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <div class="modal-title">✍️ 發表文章</div>
+      <button class="modal-close" onclick="closeModal('newArticleModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">文章類別</label>
+        <select class="form-control" id="newArticleCat">
+          <option value="guide">攻略分享</option>
+          <option value="patch">更新爆料</option>
+          <option value="event">活動公告</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">標題</label>
+        <input type="text" class="form-control" id="newArticleTitle" placeholder="文章標題">
+      </div>
+      <div class="form-group">
+        <label class="form-label">內容</label>
+        <textarea class="form-control" rows="8" id="newArticleContent" placeholder="在此撰寫文章內容..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div class="d-flex gap-8">
+        <button class="btn btn-ghost w-full" onclick="closeModal('newArticleModal')">取消</button>
+        <button class="btn btn-primary w-full" onclick="submitArticle()">
+          <i class="fa-solid fa-paper-plane"></i> 發佈文章
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/main.js"></script>
+<script>
+// ── Article data ──────────────────────────────────────
+const articles = [
+  {
+    id:2, cat:'guide', emoji:'🌟', title:'新手必看！暗影系角色全攻略 — 技能連段與配裝指南',
+    author:'ShadowBlade', date:'2024-01-14', views:'15.4K', likes:892, time:'8分鐘閱讀',
+    body: `<p>暗影系角色是本賽季最受歡迎的角色類型之一，其獨特的「影化」技能讓玩家能在戰場上瞬間移動，製造出令對手難以預測的連段攻擊。</p>
+    <h3>技能解析</h3>
+    <p>暗影穿刺（Q）：造成 150% 攻擊力的暗影傷害，並使目標暈眩 1 秒。搭配疾速刃（E）使用，可達成 280% 連段效果。</p>
+    <h3>推薦配裝</h3>
+    <p>主要裝備：暗影之刃 × 1、虛空面具 × 1、疾速護符 × 2。此配置兼顧爆發傷害與生存能力，適合新手入門。</p>
+    <h3>實戰技巧</h3>
+    <p>開場使用影化隱身接近目標，在對手技能冷卻期間發動連段，是暗影系角色的核心戰術思路。</p>`
+  },
+  {
+    id:3, cat:'event', emoji:'🎁', title:'1月限定活動「星辰之戰」開跑，限定稱號等你拿！',
+    author:'AdminTeam', date:'2024-01-13', views:'22.1K', likes:1248, time:'5分鐘閱讀',
+    body:`<p>「星辰之戰」限定活動正式開跑，活動期間（1/13 ~ 1/28）完成指定任務即可獲得限定稱號「星辰戰士」！</p>
+    <h3>活動規則</h3>
+    <p>每日登入獲得 1 顆星辰幣，累積至 14 顆即可兌換限定稱號。連續登入額外獲得 2 倍星辰幣加成。</p>
+    <h3>獎勵一覽</h3>
+    <p>7天：入門稱號框 × 1 / 14天：限定稱號「星辰戰士」/ 全勤：限定外觀「星辰之翼」</p>`
+  },
+  {
+    id:4, cat:'patch', emoji:'⚡', title:'v3.2 更新爆料：全新 5 名角色與平衡性調整預覽',
+    author:'LeakMaster', date:'2024-01-12', views:'31.8K', likes:2100, time:'12分鐘閱讀',
+    body:`<p>根據測試服資料，v3.2 版本預計將在本月底上線，帶來大幅度的角色平衡調整。</p>
+    <h3>新角色預覽</h3>
+    <p>雷神・雷歐：閃電系新角色，技能以高機動性與群體控制為主。冰霜・雪姬：治療/輔助型角色，可在戰場上施展冰霜護盾。</p>
+    <h3>平衡調整</h3>
+    <p>火焰系整體傷害降低 8%，暗影系移動速度加成從 20% 提升至 25%，光明系治療量大幅提升 15%。</p>`
+  },
+  {
+    id:5, cat:'guide', emoji:'🏆', title:'競技模式晉升攻略：從鑽石到王者的完整路線圖',
+    author:'ProPlayer99', date:'2024-01-11', views:'18.7K', likes:956, time:'15分鐘閱讀',
+    body:`<p>競技模式的晉升之路充滿挑戰，但只要掌握正確方法，每個玩家都能達到頂尖段位。本文分享個人從鑽石晉升至王者的心得。</p>
+    <h3>心態調整</h3>
+    <p>保持穩定的情緒狀態是競技的基礎。每天固定練習 2 小時，專注提升特定技能，優於漫無目的地連續排位。</p>`
+  },
+  {
+    id:6, cat:'update', emoji:'🔧', title:'系統維護公告 — 1/20 凌晨 2:00 至 4:00',
+    author:'AdminTeam', date:'2024-01-10', views:'8.2K', likes:42, time:'2分鐘閱讀',
+    body:`<p>為了提升伺服器穩定性及效能，系統將於 1/20 凌晨 2:00 至 4:00 進行例行維護。維護期間所有服務暫停，請事先安排遊戲時間。</p>
+    <p>維護完成後，v3.1.5 修復更新將自動部署，包含 12 項 Bug 修復及效能優化。</p>`
+  },
+];
+
+const catLabels = { all:'全部', update:'遊戲更新', event:'活動公告', guide:'攻略分享', patch:'更新爆料' };
+const catBadges = { update:'badge-green', event:'badge-gold', guide:'badge-cyan', patch:'badge-crimson' };
+
+let currentArticleId = null;
+let displayedCount = 3;
+
+function renderArticles(data) {
+  document.getElementById('articleList').innerHTML = data.slice(0, displayedCount).map(a => `
+    <div class="article-item" onclick="openArticle(${a.id})">
+      <div class="article-item-emoji">${a.emoji}</div>
+      <div class="article-item-body">
+        <div class="d-flex gap-6 align-center" style="margin-bottom:4px">
+          <span class="badge ${catBadges[a.cat]||'badge-dim'}" style="font-size:0.65rem">${catLabels[a.cat]||a.cat}</span>
+        </div>
+        <div class="article-item-title">${a.title}</div>
+        <div class="article-item-meta">
+          <span><i class="fa-solid fa-user" style="margin-right:3px"></i>${a.author}</span>
+          <span><i class="fa-regular fa-eye" style="margin-right:3px"></i>${a.views}</span>
+          <span><i class="fa-regular fa-heart" style="margin-right:3px"></i>${a.likes}</span>
+          <span>${a.date}</span>
+        </div>
+      </div>
+      <div style="flex-shrink:0">
+        <i class="fa-solid fa-chevron-right" style="color:var(--text-muted);font-size:0.8rem"></i>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('loadMoreBtn').style.display = data.length <= displayedCount ? 'none' : 'inline-flex';
+}
+
+function filterNews(cat, btn) {
+  document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const filtered = cat === 'all' ? articles : articles.filter(a => a.cat === cat);
+  displayedCount = 3;
+  renderArticles(filtered);
+}
+
+function searchNews() {
+  const q = document.getElementById('newsSearch').value.toLowerCase();
+  const filtered = q ? articles.filter(a => a.title.toLowerCase().includes(q)) : articles;
+  renderArticles(filtered);
+}
+
+function loadMore() {
+  displayedCount += 3;
+  renderArticles(articles);
+}
+
+// ── Open article ──────────────────────────────────────
+function openArticle(id) {
+  const a = articles.find(x => x.id === id);
+  if (!a) return;
+  currentArticleId = id;
+
+  document.getElementById('modalArticleCat').textContent   = catLabels[a.cat] || a.cat;
+  document.getElementById('modalArticleTitle').textContent = a.title;
+  document.getElementById('modalArticleAuthor').textContent= a.author;
+  document.getElementById('modalArticleDate').textContent  = `${a.date} · ${a.time}`;
+  document.getElementById('modalViews').innerHTML          = `<i class="fa-regular fa-eye"></i> ${a.views}`;
+  document.getElementById('modalArticleBody').innerHTML    = a.body;
+  document.getElementById('modalLikeCount').textContent    = a.likes;
+  renderComments(id);
+  openModal('articleModal');
+}
+
+// ── Comments ──────────────────────────────────────────
+const commentsDB = {
+  1: [{user:'IceBlade',time:'10分鐘前',text:'新賽季真的很好玩！暗影系角色超強。'},
+      {user:'Crystal22',time:'30分鐘前',text:'等這篇好久了，感謝分享！'},
+      {user:'FireStrike',time:'2小時前',text:'期待新角色！'}],
+  2: [{user:'NewbieX',time:'1小時前',text:'感謝攻略！我剛入坑的。'},
+      {user:'GuardianA',time:'3小時前',text:'配裝推薦很實用，正在練習中。'}],
+};
+
+function renderComments(id) {
+  const comments = commentsDB[id] || [];
+  document.getElementById('commentCount').textContent = `(${comments.length})`;
+  document.getElementById('commentList').innerHTML = comments.map(c => `
+    <div class="comment-item">
+      <div class="comment-header">
+        <div class="comment-avatar">😊</div>
+        <div class="comment-name">${c.user}</div>
+        <div class="comment-time">${c.time}</div>
+      </div>
+      <div class="comment-text">${c.text}</div>
+    </div>
+  `).join('');
+}
+
+function submitComment() {
+  if (!AI.isLoggedIn()) { showToast('info','請先登入','登入後才能發表留言'); return; }
+  const text = document.getElementById('commentText').value.trim();
+  if (!text) return;
+
+  const user = AI.getUser();
+  if (!commentsDB[currentArticleId]) commentsDB[currentArticleId] = [];
+  commentsDB[currentArticleId].unshift({ user: user.nickname, time: '剛剛', text });
+  renderComments(currentArticleId);
+  document.getElementById('commentText').value = '';
+  showToast('success','留言成功！');
+}
+
+function likeArticle(btn, id) {
+  if (!AI.isLoggedIn()) { showToast('info','請先登入'); return; }
+  btn.classList.toggle('liked');
+  const countEl = btn.querySelector('span') || btn;
+  const a = articles.find(x => x.id === id);
+  if (a) {
+    a.likes += btn.classList.contains('liked') ? 1 : -1;
+    if (countEl.tagName === 'SPAN') countEl.textContent = a.likes;
+    if (document.getElementById('modalLikeCount')) document.getElementById('modalLikeCount').textContent = a.likes;
+  }
+}
+
+function shareArticle(id) {
+  const a = articles.find(x => x.id === id);
+  if (navigator.share) {
+    navigator.share({ title: a?.title, url: window.location.href });
+  } else {
+    copyToClipboard(window.location.href, '連結已複製，快分享給朋友！');
+  }
+}
+
+function submitArticle() {
+  const title   = document.getElementById('newArticleTitle').value.trim();
+  const content = document.getElementById('newArticleContent').value.trim();
+  if (!title || !content) { showToast('error','請填寫標題與內容'); return; }
+  apiFetch('api/news.php', {
+    method: 'POST',
+    body: JSON.stringify({ action:'create', cat: document.getElementById('newArticleCat').value, title, content })
+  }).then(d => {
+    if (d.success) { showToast('success','文章已發布！'); closeModal('newArticleModal'); }
+    else showToast('error','發布失敗', d.message);
+  });
+}
+
+// ── Hot articles & tags ───────────────────────────────
+document.getElementById('hotArticles').innerHTML = articles
+  .sort((a,b) => b.likes - a.likes).slice(0,4)
+  .map((a,i) => `
+    <div style="display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border-dim);cursor:pointer"
+      onclick="openArticle(${a.id})">
+      <span style="font-family:var(--font-display);font-size:0.9rem;font-weight:800;color:${i<2?'var(--accent-crimson)':'var(--text-muted)'};min-width:16px">0${i+1}</span>
+      <div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.4">${a.title}</div>
+    </div>
+  `).join('');
+
+const tags = ['暗影系','攻略','S3賽季','角色介紹','競技','新手教學','限定活動','Battle Pass','配裝','連段技巧'];
+document.getElementById('tagCloud').innerHTML = tags.map(t => `
+  <span class="badge badge-dim" style="cursor:pointer" onclick="document.getElementById('newsSearch').value='${t}';searchNews()">${t}</span>
+`).join('');
+
+// ── Auth check ────────────────────────────────────────
+const user = AI.getUser();
+if (user) {
+  document.getElementById('authButtons').classList.add('d-none');
+  document.getElementById('userMenu').classList.remove('d-none');
+  // Show creator panel for lv.3+
+  if ((user.role_level || 1) >= 3) {
+    document.getElementById('creatorPanel').style.display = 'block';
+  }
+}
+
+// ── Navbar scroll ─────────────────────────────────────
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').classList.toggle('scrolled', scrollY > 40);
+});
+
+// ── Init ─────────────────────────────────────────────
+renderArticles(articles);
+
+// Auto-filter from URL
+const p = new URLSearchParams(location.search);
+if (p.get('tab')) {
+  const tabBtn = [...document.querySelectorAll('.cat-tab')].find(b => b.getAttribute('onclick')?.includes(p.get('tab')));
+  if (tabBtn) tabBtn.click();
+}
+</script>
+</body>
+</html>

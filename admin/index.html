@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理後台 — Anime Infinite</title>
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    /* Admin-specific overrides */
+    #adminNavbar {
+      background: rgba(3,4,10,0.95);
+      border-bottom: 1px solid rgba(255,45,85,0.2);
+    }
+
+    .admin-badge {
+      background: linear-gradient(135deg,var(--accent-crimson),#8b0000);
+      color:#fff;
+      font-size:0.65rem;
+      font-weight:800;
+      letter-spacing:0.1em;
+      padding:3px 8px;
+      border-radius:4px;
+      text-transform:uppercase;
+    }
+
+    /* Sidebar sections */
+    .admin-nav-section { padding: 12px 16px 4px; font-size:0.65rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--text-muted); }
+    .admin-nav-item {
+      display:flex; align-items:center; gap:10px;
+      padding:9px 14px; margin-bottom:2px;
+      border-radius:var(--radius-sm);
+      font-family:var(--font-ui); font-size:0.88rem; font-weight:500;
+      color:var(--text-secondary); cursor:pointer;
+      text-decoration:none; transition:all var(--transition);
+    }
+    .admin-nav-item:hover { background:rgba(255,255,255,0.05); color:var(--text-primary); }
+    .admin-nav-item.active { background:rgba(255,45,85,0.1); color:var(--accent-crimson); border:1px solid rgba(255,45,85,0.2); }
+    .admin-nav-item i { width:16px; text-align:center; flex-shrink:0; }
+
+    /* Promotion workflow */
+    .promotion-step {
+      display:flex; align-items:flex-start; gap:14px;
+      padding:14px; background:var(--bg-card);
+      border:1px solid var(--border-dim); border-radius:var(--radius-md);
+      margin-bottom:10px;
+    }
+    .promo-num {
+      width:28px; height:28px; border-radius:50%;
+      background:rgba(0,210,255,0.1); border:1px solid rgba(0,210,255,0.3);
+      color:var(--accent-cyan); font-family:var(--font-display); font-weight:800;
+      font-size:0.85rem; display:flex; align-items:center; justify-content:center;
+      flex-shrink:0;
+    }
+
+    /* Ticket kanban */
+    .kanban-board { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+    .kanban-col { background:var(--bg-deep); border:1px solid var(--border-dim); border-radius:var(--radius-md); padding:16px; }
+    .kanban-header { font-family:var(--font-ui); font-size:0.8rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; }
+    .kanban-card {
+      background:var(--bg-card); border:1px solid var(--border-dim);
+      border-radius:var(--radius-sm); padding:14px; margin-bottom:10px;
+      cursor:pointer; transition:all var(--transition);
+    }
+    .kanban-card:hover { border-color:var(--border-glow); transform:translateY(-2px); }
+    .kanban-card-title { font-family:var(--font-ui); font-size:0.88rem; font-weight:600; margin-bottom:6px; }
+    .kanban-card-meta  { font-size:0.72rem; color:var(--text-muted); display:flex; gap:8px; }
+
+    /* Code generator */
+    .code-preview {
+      background:var(--bg-deep); border:1px solid var(--border-dim);
+      border-radius:var(--radius-sm); padding:16px;
+      font-family:monospace; font-size:0.9rem; letter-spacing:0.12em;
+      color:var(--accent-cyan); text-align:center;
+      display:flex; flex-direction:column; gap:8px;
+    }
+    .generated-code {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:8px 12px; background:rgba(0,0,0,0.3);
+      border-radius:var(--radius-sm); border:1px solid var(--border-dim);
+    }
+
+    /* API monitor lights */
+    .monitor-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
+    .monitor-card {
+      background:var(--bg-card); border:1px solid var(--border-dim);
+      border-radius:var(--radius-md); padding:16px;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .monitor-name { font-family:var(--font-ui); font-size:0.88rem; font-weight:600; }
+    .monitor-sub  { font-size:0.72rem; color:var(--text-muted); margin-top:2px; }
+
+    /* Super admin badge */
+    .superadmin-panel {
+      background: linear-gradient(135deg, rgba(255,209,102,0.06), rgba(255,45,85,0.04));
+      border: 1px solid rgba(255,209,102,0.25);
+      border-radius:var(--radius-md); padding:20px;
+      margin-bottom:24px;
+    }
+    .superadmin-title { color:var(--accent-gold); font-family:var(--font-display); font-weight:800; font-size:1rem; margin-bottom:8px; }
+
+    /* Impersonation bar */
+    .impersonation-bar {
+      position:fixed; bottom:0; left:0; right:0;
+      background:rgba(255,45,85,0.9); backdrop-filter:blur(8px);
+      padding:10px 24px; display:none; align-items:center;
+      justify-content:space-between; z-index:9999;
+      font-family:var(--font-ui); font-size:0.88rem; font-weight:600; color:#fff;
+    }
+    .impersonation-bar.visible { display:flex; }
+
+    /* Audit log */
+    .audit-row { padding:10px 0; border-bottom:1px solid var(--border-dim); font-size:0.83rem; display:flex; gap:16px; }
+    .audit-row:last-child { border-bottom:none; }
+    .audit-time  { color:var(--text-muted); font-family:monospace; white-space:nowrap; flex-shrink:0; }
+    .audit-actor { color:var(--accent-cyan); font-weight:600; flex-shrink:0; }
+    .audit-action{ color:var(--text-primary); }
+
+    @media(max-width:1024px) {
+      .kanban-board { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Impersonation bar -->
+<div class="impersonation-bar" id="impersonationBar">
+  <span>⚠️ 以 <strong id="impersonName">玩家</strong> 身份瀏覽中</span>
+  <button class="btn btn-danger btn-sm" onclick="exitImpersonation()">
+    <i class="fa-solid fa-xmark"></i> 結束視角切換
+  </button>
+</div>
+
+<!-- ══ Admin Navbar ══════════════════════════════════════════ -->
+<nav id="navbar" style="background:rgba(3,4,10,0.97);border-bottom:1px solid rgba(255,45,85,0.2)">
+  <div style="padding:0 24px">
+    <div class="navbar-inner">
+      <a href="../index.html" class="navbar-logo">
+        <div class="logo-icon" style="background:linear-gradient(135deg,var(--accent-crimson),#8b0000)">⚔️</div>
+        <div class="logo-text">ANIME <span style="color:var(--accent-crimson)">∞</span></div>
+      </a>
+      <span class="admin-badge" style="margin-right:16px">ADMIN PANEL</span>
+      <div class="navbar-actions" style="margin-left:auto">
+        <div style="font-size:0.82rem;color:var(--text-muted);margin-right:12px">
+          <i class="fa-solid fa-user-shield" style="color:var(--accent-crimson);margin-right:6px"></i>
+          <span id="adminUsername">管理員</span>
+        </div>
+        <a href="../index.html" class="btn btn-ghost btn-sm">
+          <i class="fa-solid fa-globe"></i> 前台
+        </a>
+        <button class="btn btn-ghost btn-sm" onclick="logout()">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+        <button class="navbar-toggle" onclick="toggleMobileNav()"><i class="fa-solid fa-bars"></i></button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ══ Admin Layout ══════════════════════════════════════════ -->
+<div class="admin-layout">
+
+  <!-- ── Admin Sidebar ───────────────────────────────── -->
+  <aside class="admin-sidebar" id="adminSidebar">
+    <div class="admin-nav-section">系統概況</div>
+    <div class="admin-nav-item active" onclick="switchAdmin('dashboard',this)">
+      <i class="fa-solid fa-gauge-high"></i> 儀表板
+    </div>
+    <div class="admin-nav-item" onclick="switchAdmin('monitor',this)">
+      <i class="fa-solid fa-circle-dot"></i> API 監控
+    </div>
+    <div class="admin-nav-item" onclick="switchAdmin('audit',this)">
+      <i class="fa-solid fa-file-lines"></i> 稽核日誌
+    </div>
+
+    <div class="admin-nav-section">玩家管理</div>
+    <div class="admin-nav-item" onclick="switchAdmin('players',this)">
+      <i class="fa-solid fa-users"></i> 玩家資料
+    </div>
+    <div class="admin-nav-item" onclick="switchAdmin('rbac',this)">
+      <i class="fa-solid fa-user-shield"></i> 權限管理
+    </div>
+    <div class="admin-nav-item" onclick="switchAdmin('notify',this)">
+      <i class="fa-solid fa-bell"></i> 通知發送
+    </div>
+
+    <div class="admin-nav-section">遊戲管理</div>
+    <div class="admin-nav-item" onclick="switchAdmin('gameconfig',this)">
+      <i class="fa-solid fa-sliders"></i> 遊戲參數
+    </div>
+    <div class="admin-nav-item" onclick="switchAdmin('codegen',this)">
+      <i class="fa-solid fa-ticket"></i> 兌換碼生成
+    </div>
+    <div class="admin-nav-item" onclick="switchAdmin('events',this)">
+      <i class="fa-solid fa-calendar-star"></i> 活動管理
+    </div>
+
+    <div class="admin-nav-section">客服</div>
+    <div class="admin-nav-item" onclick="switchAdmin('tickets',this)">
+      <i class="fa-solid fa-headset"></i> 工單系統
+      <span class="badge badge-crimson" style="margin-left:auto;font-size:0.65rem">5</span>
+    </div>
+
+    <div class="admin-nav-section">超級管理員</div>
+    <div class="admin-nav-item" id="superAdminNav" onclick="switchAdmin('superadmin',this)" style="display:none">
+      <i class="fa-solid fa-crown"></i> 最高權限
+    </div>
+    <div class="admin-nav-item" onclick="switchAdmin('maintenance',this)">
+      <i class="fa-solid fa-wrench"></i> 維護模式
+    </div>
+  </aside>
+
+  <!-- ── Admin Main ───────────────────────────────────── -->
+  <main class="admin-main">
+
+    <!-- ════ DASHBOARD ═════════════════════════════════ -->
+    <div id="admin-dashboard">
+      <div class="d-flex align-center justify-between mb-32">
+        <div>
+          <h1 style="font-family:var(--font-display);font-size:1.5rem;font-weight:800">
+            <span class="text-muted" style="font-weight:400">// </span>系統儀表板
+          </h1>
+          <div style="font-size:0.82rem;color:var(--text-muted);margin-top:4px" id="dashDate"></div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="refreshDashboard()">
+          <i class="fa-solid fa-rotate" id="dashRefreshIcon"></i> 刷新數據
+        </button>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card cyan">
+          <div class="kpi-icon">💰</div>
+          <div class="kpi-value text-cyan" id="kpiRevenue">NT$0</div>
+          <div class="kpi-label">今日營收</div>
+          <div class="kpi-change up">↑ +12.4% 較昨日</div>
+        </div>
+        <div class="kpi-card crimson">
+          <div class="kpi-icon">🎮</div>
+          <div class="kpi-value text-crimson" id="kpiOnline">0</div>
+          <div class="kpi-label">當前在線人數</div>
+          <div class="kpi-change up">↑ Roblox + Web</div>
+        </div>
+        <div class="kpi-card gold">
+          <div class="kpi-icon">👤</div>
+          <div class="kpi-value text-gold" id="kpiNewUsers">0</div>
+          <div class="kpi-label">今日新增玩家</div>
+          <div class="kpi-change up">↑ +8.1% 較昨日</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-icon">⚠️</div>
+          <div class="kpi-value text-green" id="kpiErrors">0</div>
+          <div class="kpi-label">API 異常次數</div>
+          <div class="kpi-change" id="errorChange">正常</div>
+        </div>
+      </div>
+
+      <!-- Top products + Recent transactions -->
+      <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:20px">
+        <div class="card-panel" style="padding:20px">
+          <div style="font-family:var(--font-ui);font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:16px">熱銷商品排行</div>
+          <div id="topProducts"></div>
+        </div>
+        <div class="card-panel" style="padding:20px;overflow:hidden">
+          <div style="font-family:var(--font-ui);font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:16px">最新交易紀錄</div>
+          <div style="overflow-x:auto">
+            <table class="data-table" id="recentTxTable">
+              <thead><tr><th>時間</th><th>玩家</th><th>商品</th><th style="text-align:right">金額</th><th>狀態</th></tr></thead>
+              <tbody id="recentTxBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ PLAYERS ═══════════════════════════════════ -->
+    <div id="admin-players" style="display:none">
+      <div class="d-flex align-center justify-between mb-24">
+        <h2 style="font-family:var(--font-display);font-size:1.2rem;font-weight:700">// 玩家資料管理</h2>
+        <div class="d-flex gap-8">
+          <input type="text" class="form-control" id="playerSearch" placeholder="搜尋 UID / 暱稱 / Email"
+            style="width:260px;padding:8px 12px" oninput="searchPlayers()">
+          <select class="form-control" id="roleFilter" style="padding:8px;width:auto" onchange="searchPlayers()">
+            <option value="">全部層級</option>
+            <option value="1">一般使用者</option>
+            <option value="2">VIP</option>
+            <option value="5">攻略達人</option>
+            <option value="8">管理層</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card-panel" style="overflow:hidden">
+        <table class="data-table" id="playersTable">
+          <thead>
+            <tr>
+              <th>UID</th><th>暱稱</th><th>Email</th><th>層級</th>
+              <th>驗證</th><th>最後登入</th><th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="playersBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ════ RBAC ═══════════════════════════════════════ -->
+    <div id="admin-rbac" style="display:none">
+      <h2 style="font-family:var(--font-display);font-size:1.2rem;font-weight:700;margin-bottom:24px">// 權限管理 & 晉升流程</h2>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <!-- Promotion workflow -->
+        <div class="card-panel" style="padding:24px">
+          <div style="font-family:var(--font-display);font-weight:700;margin-bottom:20px">晉升自動化流程</div>
+
+          <div class="promotion-step">
+            <div class="promo-num">1</div>
+            <div>
+              <div style="font-family:var(--font-ui);font-weight:700;font-size:0.88rem;margin-bottom:4px">選擇目標玩家</div>
+              <div style="font-size:0.8rem;color:var(--text-muted)">在玩家資料頁面點擊「調整層級」</div>
+            </div>
+          </div>
+          <div class="promotion-step">
+            <div class="promo-num">2</div>
+            <div>
+              <div style="font-family:var(--font-ui);font-weight:700;font-size:0.88rem;margin-bottom:4px">設定新層級與通知</div>
+              <div style="font-size:0.8rem;color:var(--text-muted)">系統自動套用晉升通知模板</div>
+            </div>
+          </div>
+          <div class="promotion-step">
+            <div class="promo-num">3</div>
+            <div>
+              <div style="font-family:var(--font-ui);font-weight:700;font-size:0.88rem;margin-bottom:4px">自動建立企業帳號</div>
+              <div style="font-size:0.8rem;color:var(--text-muted)">管理層晉升可同步建立 @anime-infinite-corp.com 信箱</div>
+            </div>
+          </div>
+          <div class="promotion-step">
+            <div class="promo-num">4</div>
+            <div>
+              <div style="font-family:var(--font-ui);font-weight:700;font-size:0.88rem;margin-bottom:4px">追蹤已讀與回覆</div>
+              <div style="font-size:0.8rem;color:var(--text-muted)">即時顯示玩家已讀狀態與確認回覆</div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary w-full" style="margin-top:8px" onclick="openModal('promotionModal')">
+            <i class="fa-solid fa-arrow-up"></i> 手動晉升玩家
+          </button>
+        </div>
+
+        <!-- Role definitions -->
+        <div class="card-panel" style="padding:24px">
+          <div style="font-family:var(--font-display);font-weight:700;margin-bottom:16px">層級架構 (12 階)</div>
+          <div style="display:flex;flex-direction:column;gap:6px" id="roleList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ NOTIFY ═════════════════════════════════════ -->
+    <div id="admin-notify" style="display:none">
+      <h2 style="font-family:var(--font-display);font-size:1.2rem;font-weight:700;margin-bottom:24px">// 通知發送中心</h2>
+      <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:20px;align-items:start">
+        <div class="card-panel" style="padding:24px">
+          <div class="form-group">
+            <label class="form-label">發送對象</label>
+            <select class="form-control" id="notifyTarget">
+              <option value="all">全體玩家</option>
+              <option value="vip">VIP 以上</option>
+              <option value="single">指定玩家 UID</option>
+            </select>
+          </div>
+          <div class="form-group" id="singleTargetGroup" style="display:none">
+            <label class="form-label">玩家 UID</label>
+            <input type="text" class="form-control" id="notifyUID" placeholder="輸入玩家 UID">
+          </div>
+          <div class="form-group">
+            <label class="form-label">通知類型</label>
+            <select class="form-control" id="notifyType" onchange="loadNotifTemplate()">
+              <option value="general">一般公告</option>
+              <option value="promotion">晉升通知</option>
+              <option value="warning">帳號警告</option>
+              <option value="reward">獎勵發放</option>
+              <option value="custom">自訂</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">通知標題</label>
+            <input type="text" class="form-control" id="notifyTitle" placeholder="輸入通知標題">
+          </div>
+          <div class="form-group">
+            <label class="form-label">通知內容</label>
+            <textarea class="form-control" id="notifyContent" rows="6" placeholder="輸入通知內容..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-check">
+              <input type="checkbox" id="notifySendEmail">
+              <span style="font-size:0.88rem">同時發送電子郵件通知</span>
+            </label>
+          </div>
+          <button class="btn btn-primary w-full" onclick="sendNotification()">
+            <i class="fa-solid fa-paper-plane"></i> 發送通知
+          </button>
+        </div>
+
+        <!-- Sent notifications list -->
+        <div class="card-panel" style="padding:20px">
+          <div style="font-family:var(--font-ui);font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px">最近發送紀錄</div>
+          <div id="sentNotifList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ GAME CONFIG ════════════════════════════════ -->
+    <div id="admin-gameconfig" style="display:none">
+      <h2 style="font-family:var(--font-display);font-size:1.2rem;font-weight:700;margin-bottom:24px">// 遊戲參數控制台</h2>
+      <div class="maint-banner">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        所有參數修改將立即生效並寫入稽核日誌，請謹慎操作
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="card-panel" style="padding:24px">
+          <div style="font-family:var(--font-display);font-weight:700;margin-bottom:20px">⚔️ 戰鬥系統</div>
+          <div class="form-group">
+            <label class="form-label">經驗值倍率 (x1~x10)</label>
+            <div class="d-flex gap-8 align-center">
+              <input type="range" id="expMult" min="1" max="10" step="0.5" value="1.5"
+                oninput="document.getElementById('expMultVal').textContent=this.value+'x'"
+                style="flex:1;accent-color:var(--accent-cyan)">
+              <span id="expMultVal" style="font-family:var(--font-display);font-weight:800;color:var(--accent-cyan);min-width:36px">1.5x</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">掉落率加成 (%)</label>
+            <div class="input-group">
+              <i class="fa-solid fa-percent input-icon"></i>
+              <input type="number" class="form-control" id="dropRate" value="100" min="0" max="500">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">每局最大玩家數</label>
+            <input type="number" class="form-control" id="maxPlayers" value="50" min="2" max="200">
+          </div>
+          <div class="form-group">
+            <label class="form-check">
+              <input type="checkbox" id="pvpEnabled" checked>
+              <span style="font-size:0.88rem">PvP 模式啟用</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="card-panel" style="padding:24px">
+          <div style="font-family:var(--font-display);font-weight:700;margin-bottom:20px">💰 經濟系統</div>
+          <div class="form-group">
+            <label class="form-label">點數兌換匯率 (1 TWD = ? P)</label>
+            <input type="number" class="form-control" id="exchangeRate" value="10" min="1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">每日登入獎勵 (P)</label>
+            <input type="number" class="form-control" id="loginBonus" value="10" min="0" max="1000">
+          </div>
+          <div class="form-group">
+            <label class="form-label">生日禮包點數 (P)</label>
+            <input type="number" class="form-control" id="birthdayBonus" value="500" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-check">
+              <input type="checkbox" id="shopEnabled" checked>
+              <span style="font-size:0.88rem">商城購買功能啟用</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;display:flex;gap:12px">
+        <button class="btn btn-primary" onclick="saveGameConfig()">
+          <i class="fa-solid fa-save"></i> 套用設定（需二次確認）
+        </button>
+        <button class="btn btn-ghost" onclick="loadDefaultConfig()">
+          <i class="fa-solid fa-rotate-left"></i> 還原預設值
+        </button>
+      </div>
+    </div>
+
+    <!-- ════ CODE GEN ════════════════════════════════════ -->
+    <div id="admin-codegen" style="display:none">
+      <h2 style="font-family:var(--font-display);font-size:1.2rem;font-weight:700;margin-bottom:24px">// 福利兌換碼生成器</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+        <div class="card-panel" style="padding:24px">
+          <div class="form-group">
+            <label class="form-label">生成數量</label>
+            <input type="number" class="form-control" id="codeQty" value="10" min="1" max="1000">
+          </div>
+          <div class="form-group">
+            <label class="form-label">兌換獎勵內容</label>
+            <select class="form-control" id="codeReward">
+              <option value="points_100">100 P 點數</option>
+              <option value="points_200">200 P 點數</option>
+              <option value="points_500">500 P 點數</option>
+              <option value="title_rookie">稱號：新兵</option>
+              <option value="title_shadow">稱號：暗影</option>
+              <option value="custom">自訂</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">到期日 (留空=永不到期)</label>
+            <input type="date" class="form-control" id="codeExpiry">
+          </div>
+          <div class="form-group">
+            <label class="form-label">每碼最大使用次數</label>
+            <input type="number" class="form-control" id="codeMaxUse" value="1" min="1">
+          </div>
+          <button class="btn btn-primary w-full" onclick="generateCodes()">
+            <i class="fa-solid fa-ticket"></i> 生成兌換碼
+          </button>
+        </div>
+
+        <div class="card-panel" style="padding:20px">
+          <div style="font-family:var(--font-ui);font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px">生成結果</div>
+          <div class="code-preview" id="codePreview">
+            <div style="color:var(--text-muted);font-size:0.88rem">點擊「生成兌換碼」後在此顯示</div>
+          </div>
+          <div id="codeActions" style="display:none;margin-top:12px;display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="copyAllCodes()">
+              <i class="fa-solid fa-copy"></i> 複製全部
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="exportCodes()">
+              <i class="fa-solid fa-file-export"></i> 匯出 CSV
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ TICKETS ════════════════════════════════════ -->
+    <div id="admin-tickets" style="display:none">
+      <div class="d-flex align-center justify-between mb-24">
+        <h2 style="font-family:var(--font-display);font-size:1.2rem;font-weight:700">// 客服工單系統</h2>
+        <div class="d-flex gap-8 align-center">
+          <span class="badge badge-crimson">5 待處理</span>
+        </div>
+      </div>
+
+      <div class="kanban-board" id="kanbanBoard"></div>
+    </div>
+
+    <!-- ════ MONITOR ════════════════════════════════════ -->
+    <div id="admin-monitor" style="display:none">
+      <h2 style="font-family:var(--font-display);font-size:1.2rem;font-weight:700;margin-bottom:24px">// API 狀態監控</h2>
+      <div class="monitor-grid" id="monitorGrid"></div>
+    </div>
+
+    <!-- ════ AUDIT ══════════════════════════════════════ -->
+    <div id="admin-audit" style="display:none">
+      <div class="d-flex align-center justify-between mb-24">
+        <h2 style="font-family:var(--font-display);font-size:1.2rem;font-weight:700">// 稽核日誌</h2>
+        <span class="badge badge-dim"><i class="fa-solid fa-lock" style="margin-right:4px"></i>唯讀</span>
+      </div>
+      <div class="card-panel" style="padding:24px">
+        <div id="auditLog"></div>
+      </div>
+    </div>
+
+    <!-- ════ SUPER ADMIN ════════════════════════════════ -->
+    <div id="admin-superadmin" style="display:none">
+      <div class="superadmin-panel">
+        <div class="superadmin-title">👑 總管理員專屬功能</div>
+        <div style="font-size:0.85rem;color:var(--text-secondary)">以下操作具有最高系統權限，所有動作均寫入不可篡改的稽核日誌。</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px">
+        <div class="card-panel" style="padding:20px">
+          <div style="font-size:1.3rem;margin-bottom:10px">👁️</div>
+          <div style="font-family:var(--font-display);font-weight:700;margin-bottom:8px">視角切換 (Impersonation)</div>
+          <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:14px">以任意玩家身份瀏覽前台，不影響其資料。</div>
+          <div class="d-flex gap-8">
+            <input type="text" class="form-control" id="impersonUID" placeholder="輸入玩家 UID">
+            <button class="btn btn-danger btn-sm" onclick="startImpersonation()">切換</button>
+          </div>
+        </div>
+
+        <div class="card-panel" style="padding:20px">
+          <div style="font-size:1.3rem;margin-bottom:10px">🔑</div>
+          <div style="font-family:var(--font-display);font-weight:700;margin-bottom:8px">安全碼核發</div>
+          <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:14px">為管理層成員核發帳戶安全碼（第三層登入驗證）。</div>
+          <button class="btn btn-outline btn-sm w-full" onclick="openModal('issueSafetyCodeModal')">
+            <i class="fa-solid fa-key"></i> 核發安全碼
+          </button>
+        </div>
+
+        <div class="card-panel" style="padding:20px">
+          <div style="font-size:1.3rem;margin-bottom:10px">🏢</div>
+          <div style="font-family:var(--font-display);font-weight:700;margin-bottom:8px">企業信箱佈建</div>
+          <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:14px">自動建立 @anime-infinite-corp.com 專屬信箱。</div>
+          <button class="btn btn-outline btn-sm w-full" onclick="openModal('provisionEmailModal')">
+            <i class="fa-solid fa-envelope-circle-check"></i> 建立信箱
+          </button>
+        </div>
+
+        <div class="card-panel" style="padding:20px">
+          <div style="font-size:1.3rem;margin-bottom:10px">💾</div>
+          <div style="font-family:var(--font-display);font-weight:700;margin-bottom:8px">手動資料庫備份</div>
+          <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:14px">立即觸發 mysqldump 並上傳至雲端備份。</div>
+          <button class="btn btn-outline btn-sm w-full" onclick="triggerBackup()">
+            <i class="fa-solid fa-database"></i> 立即備份
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ MAINTENANCE ════════════════════════════════ -->
+    <div id="admin-maintenance" style="display:none">
+      <h2 style="font-family:var(--font-display);font-size:1.2rem;font-weight:700;margin-bottom:24px">// 維護模式管理</h2>
+      <div class="card-panel" style="padding:24px;max-width:600px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div>
+            <div style="font-family:var(--font-display);font-size:1rem;font-weight:700">維護模式開關</div>
+            <div style="font-size:0.82rem;color:var(--text-muted);margin-top:4px">開啟後主站將自動 302 轉址至備用網站</div>
+          </div>
+          <label style="position:relative;display:inline-block;width:52px;height:28px;cursor:pointer">
+            <input type="checkbox" id="maintToggle" style="opacity:0;width:0;height:0" onchange="toggleMaintenance(this.checked)">
+            <span id="maintSlider" style="position:absolute;inset:0;background:var(--bg-elevated);border-radius:14px;transition:0.3s;border:1px solid var(--border-glow)">
+              <span style="position:absolute;top:3px;left:3px;width:20px;height:20px;background:var(--text-muted);border-radius:50%;transition:0.3s" id="maintKnob"></span>
+            </span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">維護公告標題</label>
+          <input type="text" class="form-control" id="maintTitle" value="🔧 系統維護中" placeholder="公告標題">
+        </div>
+        <div class="form-group">
+          <label class="form-label">維護說明</label>
+          <textarea class="form-control" rows="3" id="maintMsg" placeholder="維護說明...">系統正在進行例行維護，預計 2 小時後恢復服務。感謝您的耐心等候！</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">預計完成時間</label>
+          <input type="datetime-local" class="form-control" id="maintETA">
+        </div>
+        <button class="btn btn-primary" onclick="saveMaintConfig()">
+          <i class="fa-solid fa-save"></i> 儲存設定
+        </button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══ MODALS ════════════════════════════════════════════════ -->
+
+<!-- Promotion Modal -->
+<div class="modal-overlay" id="promotionModal" onclick="closeOnOverlay(event,'promotionModal')">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <div class="modal-title">⬆️ 晉升玩家</div>
+      <button class="modal-close" onclick="closeModal('promotionModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">目標玩家 UID</label>
+        <input type="text" class="form-control" id="promoteUID" placeholder="輸入玩家 UID">
+      </div>
+      <div class="form-group">
+        <label class="form-label">新層級</label>
+        <select class="form-control" id="promoteRole" onchange="updatePromoTemplate()">
+          <option value="2">VIP 使用者</option>
+          <option value="3">YouTuber</option>
+          <option value="4">技術貢獻者</option>
+          <option value="5">攻略達人</option>
+          <option value="6">社群領袖</option>
+          <option value="7">先鋒測試員</option>
+          <option value="8">小幫手</option>
+          <option value="9">客服技術人員</option>
+          <option value="10">基本管理員</option>
+          <option value="11">進階管理員</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">通知內容 (可自訂)</label>
+        <textarea class="form-control" rows="5" id="promoteMsg"></textarea>
+      </div>
+      <div class="form-group" id="provisionEmailCheck" style="display:none">
+        <label class="form-check">
+          <input type="checkbox" id="doProvisionEmail">
+          <span style="font-size:0.88rem">同步建立 @anime-infinite-corp.com 企業信箱</span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div class="d-flex gap-8">
+        <button class="btn btn-ghost w-full" onclick="closeModal('promotionModal')">取消</button>
+        <button class="btn btn-primary w-full" onclick="executePromotion()">
+          <i class="fa-solid fa-paper-plane"></i> 送出晉升通知
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Game Config Confirm -->
+<div class="modal-overlay" id="gameConfigConfirm" onclick="closeOnOverlay(event,'gameConfigConfirm')">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title" style="color:var(--accent-crimson)">⚠️ 二次確認</div>
+      <button class="modal-close" onclick="closeModal('gameConfigConfirm')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-secondary);line-height:1.8;font-size:0.93rem">
+        您即將修改遊戲參數，此操作將<strong style="color:var(--accent-crimson)">立即影響所有在線玩家</strong>並寫入稽核日誌。<br><br>確定要繼續嗎？
+      </p>
+    </div>
+    <div class="modal-footer">
+      <div class="d-flex gap-8">
+        <button class="btn btn-ghost w-full" onclick="closeModal('gameConfigConfirm')">取消</button>
+        <button class="btn btn-danger w-full" onclick="confirmGameConfig()">確認套用</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Ticket Detail Modal -->
+<div class="modal-overlay" id="ticketModal" onclick="closeOnOverlay(event,'ticketModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="ticketModalTitle">工單詳情</div>
+      <button class="modal-close" onclick="closeModal('ticketModal')">✕</button>
+    </div>
+    <div class="modal-body" id="ticketModalBody"></div>
+    <div class="modal-footer">
+      <div class="form-group mb-0">
+        <label class="form-label">客服回覆</label>
+        <div class="input-group">
+          <input type="text" class="form-control" id="ticketReply" placeholder="輸入回覆（同步推送 Discord 通知）">
+          <button class="input-action" onclick="replyTicket()"><i class="fa-solid fa-paper-plane" style="color:var(--accent-cyan)"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/main.js"></script>
+<script>
+// ── Auth guard ────────────────────────────────────────
+if (!AI.isLoggedIn() || !AI.isAdmin()) {
+  window.location.href = 'login.html';
+}
+const adminUser = AI.getUser();
+if (adminUser) {
+  document.getElementById('adminUsername').textContent = adminUser.nickname;
+  if (adminUser.role_level >= 12) {
+    document.getElementById('superAdminNav').style.display = 'flex';
+  }
+}
+
+// ── Admin tabs ────────────────────────────────────────
+const adminSections = ['dashboard','players','rbac','notify','gameconfig','codegen','tickets','monitor','audit','superadmin','maintenance'];
+
+function switchAdmin(name, el) {
+  adminSections.forEach(s => {
+    const el = document.getElementById(`admin-${s}`);
+    if (el) el.style.display = s === name ? 'block' : 'none';
+  });
+  document.querySelectorAll('.admin-nav-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+  loadAdminSection(name);
+}
+
+function loadAdminSection(name) {
+  if (name === 'dashboard') loadDashboardData();
+  if (name === 'players')   loadPlayers();
+  if (name === 'rbac')      loadRoleList();
+  if (name === 'tickets')   loadKanban();
+  if (name === 'monitor')   loadMonitor();
+  if (name === 'audit')     loadAuditLog();
+  if (name === 'notify')    loadSentNotifs();
+}
+
+// ── Dashboard ─────────────────────────────────────────
+function loadDashboardData() {
+  document.getElementById('dashDate').textContent = new Date().toLocaleString('zh-TW');
+
+  // Animate KPIs
+  const animateKPI = (id, target, prefix='', suffix='') => {
+    let cur = 0;
+    const step = () => {
+      cur = Math.min(cur + Math.ceil((target - cur) * 0.1) || 1, target);
+      document.getElementById(id).textContent = prefix + cur.toLocaleString() + suffix;
+      if (cur < target) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
+  animateKPI('kpiRevenue', 128400, 'NT$');
+  animateKPI('kpiOnline', 12481);
+  animateKPI('kpiNewUsers', 342);
+  animateKPI('kpiErrors', 2);
+
+  // Top products
+  document.getElementById('topProducts').innerHTML = [
+    {name:'1000 P 超值包', sales:482, pct:100},
+    {name:'500 P 點數包',  sales:371, pct:77},
+    {name:'Battle Pass',   sales:219, pct:45},
+    {name:'200 P 入門包',  sales:198, pct:41},
+    {name:'暗影稱號包',    sales:87,  pct:18},
+  ].map(p => `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="font-size:0.82rem;color:var(--text-secondary);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
+      <div style="flex:2;height:6px;background:var(--bg-elevated);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${p.pct}%;background:linear-gradient(90deg,var(--accent-cyan),var(--accent-blue));border-radius:3px;transition:width 1s ease"></div>
+      </div>
+      <div style="font-family:var(--font-display);font-size:0.85rem;font-weight:700;color:var(--accent-gold);min-width:30px;text-align:right">${p.sales}</div>
+    </div>
+  `).join('');
+
+  // Recent transactions
+  document.getElementById('recentTxBody').innerHTML = [
+    {time:'14:22',uid:'#84721',item:'1000 P 超值包', amt:'NT$99',status:'success'},
+    {time:'14:19',uid:'#12038',item:'Battle Pass',   amt:'NT$199',status:'success'},
+    {time:'14:15',uid:'#55901',item:'500 P 點數包',  amt:'NT$49',status:'success'},
+    {time:'14:09',uid:'#32210',item:'暗影稱號包',    amt:'NT$299',status:'pending'},
+    {time:'13:58',uid:'#77432',item:'200 P 入門包',  amt:'NT$19',status:'success'},
+  ].map(t => `
+    <tr>
+      <td class="td-mono">${t.time}</td>
+      <td class="td-mono">${t.uid}</td>
+      <td>${t.item}</td>
+      <td style="text-align:right;font-family:var(--font-display);font-weight:700;color:var(--accent-gold)">${t.amt}</td>
+      <td><span class="badge ${t.status==='success'?'badge-green':'badge-gold'}">${t.status==='success'?'成功':'處理中'}</span></td>
+    </tr>
+  `).join('');
+}
+
+// ── Players ───────────────────────────────────────────
+const mockPlayers = [
+  {id:'#84721',name:'ShadowBlade',email:'shadow@example.com',role:5,v:'✅✅✅✅❌',last:'14分鐘前'},
+  {id:'#12038',name:'CrystalWing', email:'crystal@example.com',role:2,v:'✅✅❌✅❌',last:'2小時前'},
+  {id:'#55901',name:'NightStrike', email:'night@example.com',role:1,v:'✅❌❌❌❌',last:'昨天'},
+  {id:'#32210',name:'FireBreath',  email:'fire@example.com',role:7,v:'✅✅✅✅✅',last:'3天前'},
+  {id:'#77432',name:'IceGuardian', email:'ice@example.com',role:3,v:'✅✅✅❌✅',last:'1週前'},
+];
+
+const roleLabels = {1:'一般',2:'VIP',3:'YTer',4:'Tech',5:'攻略',6:'社群',7:'測試員',8:'小幫手',9:'客服',10:'管理員',11:'進階管理',12:'總管理'};
+const roleBadges = {1:'badge-dim',2:'badge-gold',3:'badge-crimson',4:'badge-cyan',5:'badge-cyan',6:'badge-purple',7:'badge-green',8:'badge-purple',9:'badge-purple',10:'badge-crimson',11:'badge-crimson',12:'badge-gold'};
+
+function renderPlayers(data) {
+  document.getElementById('playersBody').innerHTML = data.map(p => `
+    <tr>
+      <td class="td-mono">${p.id}</td>
+      <td><strong style="font-family:var(--font-ui)">${p.name}</strong></td>
+      <td style="font-size:0.82rem;color:var(--text-muted)">${p.email}</td>
+      <td><span class="badge ${roleBadges[p.role]||'badge-dim'}">${roleLabels[p.role]||'—'}</span></td>
+      <td style="font-size:0.85rem;letter-spacing:2px">${p.v}</td>
+      <td style="font-size:0.8rem;color:var(--text-muted)">${p.last}</td>
+      <td>
+        <div class="d-flex gap-4">
+          <button class="btn btn-ghost btn-sm" onclick="viewPlayer('${p.id}')"><i class="fa-solid fa-eye"></i></button>
+          <button class="btn btn-outline btn-sm" onclick="openPromoteModal('${p.id}')"><i class="fa-solid fa-arrow-up"></i></button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function loadPlayers() { renderPlayers(mockPlayers); }
+
+function searchPlayers() {
+  const q = document.getElementById('playerSearch').value.toLowerCase();
+  const r = document.getElementById('roleFilter').value;
+  const filtered = mockPlayers.filter(p =>
+    (!q || p.name.toLowerCase().includes(q) || p.id.includes(q) || p.email.includes(q)) &&
+    (!r || String(p.role) === r)
+  );
+  renderPlayers(filtered);
+}
+
+function viewPlayer(id) { showToast('info','玩家資料',`查看玩家 ${id}`); }
+
+function openPromoteModal(uid) {
+  document.getElementById('promoteUID').value = uid;
+  openModal('promotionModal');
+}
+
+// ── Role list ─────────────────────────────────────────
+function loadRoleList() {
+  const roles = [
+    {lv:12,name:'總管理員',color:'var(--accent-gold)',desc:'最高系統控制權'},
+    {lv:11,name:'進階管理員',color:'var(--accent-crimson)',desc:'進階管理功能'},
+    {lv:10,name:'基本管理員',color:'var(--accent-crimson)',desc:'玩家管理'},
+    {lv:9, name:'客服技術人員',color:'var(--accent-purple)',desc:'工單處理'},
+    {lv:8, name:'小幫手',color:'var(--accent-purple)',desc:'基本客服'},
+    {lv:7, name:'先鋒測試員',color:'var(--accent-green)',desc:'Beta 測試'},
+    {lv:6, name:'社群領袖',color:'var(--accent-cyan)',desc:'社群管理'},
+    {lv:5, name:'攻略達人',color:'var(--accent-cyan)',desc:'發布攻略'},
+    {lv:4, name:'技術貢獻者',color:'var(--accent-blue)',desc:'技術支援'},
+    {lv:3, name:'YouTuber',color:'#ff4444',desc:'影音創作'},
+    {lv:2, name:'VIP 使用者',color:'var(--accent-gold)',desc:'付費會員'},
+    {lv:1, name:'一般使用者',color:'var(--text-muted)',desc:'基礎功能'},
+  ];
+  document.getElementById('roleList').innerHTML = roles.map(r => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-deep);border-radius:var(--radius-sm);border:1px solid var(--border-dim)">
+      <span style="font-family:var(--font-display);font-weight:800;font-size:0.8rem;color:${r.color};min-width:20px">Lv${r.lv}</span>
+      <span style="font-family:var(--font-ui);font-weight:600;font-size:0.85rem">${r.name}</span>
+      <span style="font-size:0.75rem;color:var(--text-muted);margin-left:auto">${r.desc}</span>
+    </div>
+  `).join('');
+}
+
+// ── Promotion ─────────────────────────────────────────
+const promoTemplates = {
+  2: `恭喜您成為 VIP 使用者！享有商城折扣與專屬稱號展示特權。`,
+  5: `恭喜您！您已被提名晉升為【攻略達人】。\n\n請詳細閱讀以下權責明細，並於 7 天內回覆確認領取資格。\n\n• 攻略文章發布權限\n• 專屬頁面標籤展示`,
+  8: `恭喜！您已被晉升為【小幫手】，歡迎加入管理團隊。\n\n請於 3 天內回覆確認，系統將為您建立專屬企業信箱。`,
+};
+
+function updatePromoTemplate() {
+  const role = document.getElementById('promoteRole').value;
+  const tmpl = promoTemplates[role] || `恭喜您！您已被提名晉升為相應職位。請詳細閱讀權責並回覆確認。`;
+  document.getElementById('promoteMsg').value = tmpl;
+  document.getElementById('provisionEmailCheck').style.display = role >= 8 ? 'block' : 'none';
+}
+updatePromoTemplate();
+
+function executePromotion() {
+  const uid  = document.getElementById('promoteUID').value.trim();
+  const role = document.getElementById('promoteRole').value;
+  const msg  = document.getElementById('promoteMsg').value.trim();
+  if (!uid) { showToast('error','請輸入玩家 UID'); return; }
+  apiFetch('../api/admin.php', {
+    method:'POST',
+    body: JSON.stringify({ action:'promote', uid, role, message: msg, provision_email: document.getElementById('doProvisionEmail')?.checked })
+  }).then(d => {
+    if (d.success) { showToast('success','晉升通知已送出', `玩家 ${uid} 晉升成功`); closeModal('promotionModal'); }
+    else showToast('error','操作失敗', d.message);
+  });
+}
+
+// ── Kanban ────────────────────────────────────────────
+function loadKanban() {
+  const columns = [
+    {status:'open',   label:'待處理', color:'var(--accent-crimson)',
+     tickets:[
+       {id:'#T001',user:'ShadowBlade',title:'購買後未收到點數',time:'10分鐘前',priority:'high'},
+       {id:'#T002',user:'IceGuardian',title:'Discord 綁定失敗',time:'32分鐘前',priority:'mid'},
+       {id:'#T003',user:'FireBreath', title:'兌換碼顯示已使用',time:'1小時前',priority:'mid'},
+     ]},
+    {status:'inprogress',label:'處理中', color:'var(--accent-gold)',
+     tickets:[
+       {id:'#T004',user:'CrystalWing',title:'無法登入帳號',time:'2小時前',priority:'high'},
+       {id:'#T005',user:'NightStrike', title:'請求退款',time:'3小時前',priority:'low'},
+     ]},
+    {status:'resolved',  label:'已完成', color:'var(--accent-green)',
+     tickets:[
+       {id:'#T006',user:'TestUser123',title:'修改暱稱申請',time:'昨天',priority:'low'},
+     ]},
+  ];
+
+  document.getElementById('kanbanBoard').innerHTML = columns.map(col => `
+    <div class="kanban-col">
+      <div class="kanban-header">
+        <span style="color:${col.color}">${col.label}</span>
+        <span class="badge" style="background:rgba(255,255,255,0.06);color:var(--text-muted)">${col.tickets.length}</span>
+      </div>
+      ${col.tickets.map(t => `
+        <div class="kanban-card" onclick="openTicket('${t.id}','${t.title}','${t.user}')">
+          <div class="d-flex align-center justify-between mb-8">
+            <span class="td-mono" style="font-size:0.75rem;color:var(--text-muted)">${t.id}</span>
+            <span class="badge ${t.priority==='high'?'badge-crimson':t.priority==='mid'?'badge-gold':'badge-dim'}">${t.priority==='high'?'緊急':t.priority==='mid'?'一般':'低'}</span>
+          </div>
+          <div class="kanban-card-title">${t.title}</div>
+          <div class="kanban-card-meta">
+            <span><i class="fa-solid fa-user"></i> ${t.user}</span>
+            <span><i class="fa-regular fa-clock"></i> ${t.time}</span>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function openTicket(id, title, user) {
+  document.getElementById('ticketModalTitle').textContent = `${id} — ${title}`;
+  document.getElementById('ticketModalBody').innerHTML = `
+    <div class="d-flex gap-8 mb-16" style="flex-wrap:wrap">
+      <span class="badge badge-crimson">緊急</span>
+      <span class="badge badge-dim">玩家：${user}</span>
+      <span class="badge badge-dim">開啟：10分鐘前</span>
+    </div>
+    <div style="background:var(--bg-deep);border-radius:var(--radius-sm);padding:14px;font-size:0.88rem;color:var(--text-secondary);line-height:1.8">
+      玩家回報：${title}。請求盡快處理，已附上訂單截圖。
+    </div>
+  `;
+  openModal('ticketModal');
+}
+
+function replyTicket() {
+  const v = document.getElementById('ticketReply').value.trim();
+  if (!v) return;
+  showToast('success','回覆已送出','Discord 通知已同步推送');
+  document.getElementById('ticketReply').value = '';
+  closeModal('ticketModal');
+}
+
+// ── Monitor ───────────────────────────────────────────
+function loadMonitor() {
+  const apis = [
+    {name:'Roblox Open Cloud',  sub:'S2S 通訊',    status:'ok'},
+    {name:'Discord Webhook',    sub:'推播服務',     status:'ok'},
+    {name:'Payment Gateway',    sub:'金流 API',     status:'ok'},
+    {name:'MySQL Database',     sub:'主資料庫',     status:'ok'},
+    {name:'MySQL Backup',       sub:'備份資料庫',   status:'ok'},
+    {name:'Email SMTP',         sub:'郵件服務',     status:'warn'},
+    {name:'SMS Gateway',        sub:'簡訊驗證',     status:'ok'},
+    {name:'Google OAuth',       sub:'SSO 驗證',     status:'ok'},
+    {name:'Discord OAuth',      sub:'SSO 驗證',     status:'ok'},
+    {name:'CDN',                sub:'靜態資源',     status:'ok'},
+    {name:'Rate Limiter',       sub:'API 限流',     status:'ok'},
+    {name:'Backup (GDrive)',    sub:'雲端備份',     status:'ok'},
+  ];
+  document.getElementById('monitorGrid').innerHTML = apis.map(a => `
+    <div class="monitor-card">
+      <div>
+        <div class="monitor-name">${a.name}</div>
+        <div class="monitor-sub">${a.sub}</div>
+      </div>
+      <div class="api-light ${a.status}">
+        <div class="dot"></div>
+        <span style="color:${a.status==='ok'?'var(--accent-green)':a.status==='warn'?'var(--accent-gold)':'var(--accent-crimson)'}">
+          ${a.status==='ok'?'正常':a.status==='warn'?'警告':'故障'}
+        </span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Audit log ─────────────────────────────────────────
+function loadAuditLog() {
+  const logs = [
+    {time:'14:22:01',actor:'SuperAdmin',action:'晉升玩家 #84721 至 攻略達人 (Lv.5)'},
+    {time:'14:15:33',actor:'Admin_Chen',action:'修改遊戲參數：expMult 1.0 → 1.5'},
+    {time:'14:09:12',actor:'SuperAdmin',action:'生成兌換碼 × 50，獎勵：500P'},
+    {time:'14:02:44',actor:'Support_A', action:'關閉工單 #T006 (已解決)'},
+    {time:'13:55:18',actor:'Admin_Chen',action:'查看玩家 #32210 詳細資料'},
+    {time:'13:44:07',actor:'SuperAdmin',action:'核發安全碼給 Admin_Chen (Lv.10)'},
+  ];
+  document.getElementById('auditLog').innerHTML = logs.map(l => `
+    <div class="audit-row">
+      <div class="audit-time">${l.time}</div>
+      <div class="audit-actor">${l.actor}</div>
+      <div class="audit-action">${l.action}</div>
+    </div>
+  `).join('');
+}
+
+// ── Notifications ─────────────────────────────────────
+function loadNotifTemplate() {
+  const templates = {
+    promotion: `恭喜您！您已被提名晉升為 [職位名稱]。\n\n請詳細閱讀以下權責明細，並於 [X] 天內回覆確認領取資格。`,
+    warning:   `您的帳號疑似違反使用條款，請立即確認相關行為，否則帳號可能遭到限制。`,
+    reward:    `恭喜！您已獲得 [獎勵內容] 獎勵，已自動發送至您的帳戶。`,
+    general:   ``,
+  };
+  const t = document.getElementById('notifyType').value;
+  document.getElementById('notifyContent').value = templates[t] || '';
+}
+
+function loadSentNotifs() {
+  document.getElementById('sentNotifList').innerHTML = [
+    {target:'全體玩家',title:'賽季 3 開放公告',time:'今天 09:00',read:'12.4K'},
+    {target:'#84721', title:'晉升通知',         time:'今天 09:32',read:'已讀'},
+    {target:'VIP 以上',title:'VIP 限定活動',    time:'昨天 18:00',read:'2.1K'},
+  ].map(n => `
+    <div style="padding:10px 0;border-bottom:1px solid var(--border-dim)">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-family:var(--font-ui);font-size:0.85rem;font-weight:600">${n.title}</span>
+        <span class="badge badge-green" style="font-size:0.65rem">${n.read}</span>
+      </div>
+      <div style="font-size:0.75rem;color:var(--text-muted)">→ ${n.target} · ${n.time}</div>
+    </div>
+  `).join('');
+}
+
+document.getElementById('notifyTarget').addEventListener('change', function() {
+  document.getElementById('singleTargetGroup').style.display = this.value === 'single' ? 'block' : 'none';
+});
+
+function sendNotification() {
+  const title   = document.getElementById('notifyTitle').value.trim();
+  const content = document.getElementById('notifyContent').value.trim();
+  const target  = document.getElementById('notifyTarget').value;
+  if (!title || !content) { showToast('error','請填寫通知標題與內容'); return; }
+  apiFetch('../api/admin.php', {
+    method:'POST',
+    body: JSON.stringify({ action:'send_notification', title, content, target })
+  }).then(d => {
+    if (d.success) { showToast('success','通知已送出！', `已發送至 ${target}`); loadSentNotifs(); }
+    else showToast('error','發送失敗', d.message);
+  });
+}
+
+// ── Code gen ──────────────────────────────────────────
+let generatedCodes = [];
+function generateCodes() {
+  const qty    = parseInt(document.getElementById('codeQty').value);
+  const reward = document.getElementById('codeReward').value;
+  generatedCodes = Array.from({length: qty}, () =>
+    Array.from({length: 10}, () => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random()*36)]).join('')
+  );
+  document.getElementById('codePreview').innerHTML = generatedCodes.slice(0,20).map(c => `
+    <div class="generated-code">
+      <span>${c}</span>
+      <button onclick="copyToClipboard('${c}','已複製')" style="background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem"><i class="fa-solid fa-copy"></i></button>
+    </div>
+  `).join('') + (qty > 20 ? `<div style="color:var(--text-muted);font-size:0.8rem">... 共 ${qty} 組</div>` : '');
+  document.getElementById('codeActions').style.display = 'flex';
+  showToast('success',`已生成 ${qty} 組兌換碼`);
+}
+
+function copyAllCodes() {
+  copyToClipboard(generatedCodes.join('\n'), `已複製 ${generatedCodes.length} 組兌換碼`);
+}
+
+function exportCodes() {
+  const csv = 'code,reward\n' + generatedCodes.map(c => `${c},${document.getElementById('codeReward').value}`).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = `codes_${Date.now()}.csv`;
+  a.click();
+}
+
+// ── Game config ───────────────────────────────────────
+function saveGameConfig() { openModal('gameConfigConfirm'); }
+function confirmGameConfig() {
+  closeModal('gameConfigConfirm');
+  showToast('success','遊戲參數已套用','變更已寫入稽核日誌');
+}
+function loadDefaultConfig() {
+  document.getElementById('expMult').value = 1;
+  document.getElementById('expMultVal').textContent = '1x';
+  document.getElementById('dropRate').value = 100;
+  document.getElementById('maxPlayers').value = 50;
+  showToast('info','已還原預設值');
+}
+
+// ── Maintenance ───────────────────────────────────────
+function toggleMaintenance(enabled) {
+  const knob = document.getElementById('maintKnob');
+  const slider = document.getElementById('maintSlider');
+  knob.style.transform = enabled ? 'translateX(24px)' : '';
+  knob.style.background = enabled ? 'var(--accent-crimson)' : 'var(--text-muted)';
+  showToast(enabled ? 'warning' : 'success', enabled ? '維護模式已開啟' : '維護模式已關閉');
+}
+
+function saveMaintConfig() { showToast('success','維護設定已儲存'); }
+
+// ── Super admin ───────────────────────────────────────
+function startImpersonation() {
+  const uid = document.getElementById('impersonUID').value.trim();
+  if (!uid) { showToast('error','請輸入玩家 UID'); return; }
+  document.getElementById('impersonName').textContent = uid;
+  document.getElementById('impersonationBar').classList.add('visible');
+  showToast('warning','視角切換中', `以 ${uid} 身份瀏覽`);
+  window.open('../index.html?impersonate=1', '_blank');
+}
+
+function exitImpersonation() {
+  document.getElementById('impersonationBar').classList.remove('visible');
+  showToast('info','已結束視角切換');
+}
+
+function triggerBackup() {
+  apiFetch('../api/admin.php', { method:'POST', body: JSON.stringify({ action:'trigger_backup' }) })
+    .then(d => showToast(d.success ? 'success':'error', d.success ? '備份完成':'備份失敗', d.message));
+}
+
+function refreshDashboard() {
+  const icon = document.getElementById('dashRefreshIcon');
+  icon.classList.add('fa-spin');
+  loadDashboardData();
+  setTimeout(() => icon.classList.remove('fa-spin'), 1000);
+}
+
+// ── Boot ─────────────────────────────────────────────
+loadDashboardData();
+</script>
+</body>
+</html>
